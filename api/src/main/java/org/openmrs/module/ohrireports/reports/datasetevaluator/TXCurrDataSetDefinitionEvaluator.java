@@ -72,7 +72,7 @@ public class TXCurrDataSetDefinitionEvaluator implements DataSetEvaluator {
 				Date.class), obses.getValueDate());	
 				row.addColumnValue(new DataSetColumn("TreatmentEndDateETC", "Treatment End Date ETH", 
 				String.class),ethiopianDate.equals(null)? "": ethiopianDate.getDay()+"/"+ethiopianDate.getMonth()+"/"+ethiopianDate.getYear());	
-				row.addColumnValue(new DataSetColumn("Regimen","Regmin",String.class), getRegmin(obses,evalContext));	
+				row.addColumnValue(new DataSetColumn("Regimen","Regmin",String.class), getRegime(obses,evalContext));	
 				row.addColumnValue(new DataSetColumn("Status", "Status", 
 				String.class), status.equals(null)?"":status.getName().getName());
 				data.addRow(row);
@@ -125,7 +125,8 @@ public class TXCurrDataSetDefinitionEvaluator implements DataSetEvaluator {
       	.whereEqual("obv.concept", conceptService.getConceptByUuid(PATIENT_STATUS))
 		.and()
 		.whereIn("obv.valueCoded", Arrays.
-		asList(conceptService.getConceptByUuid(ALIVE),
+		asList(
+			conceptService.getConceptByUuid(ALIVE),
 		conceptService.getConceptByUuid(RESTART)))
 		.and().whereLess("obv.obsDatetime", hdsd.getEndDate());
 		queryBuilder.orderDesc("obv.personId,obv.obsDatetime");
@@ -143,7 +144,7 @@ public class TXCurrDataSetDefinitionEvaluator implements DataSetEvaluator {
         return uniqiObs;
     }
 	
-	private String getRegmin(Obs obs, EvaluationContext context) {
+	private String getRegime(Obs obs, EvaluationContext context) {
 		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
 		
 		queryBuilder.select("obv.valueCoded").from(Obs.class, "obv")

@@ -70,7 +70,7 @@ public class HTsNewDataSetDefinitionEvaluator implements DataSetEvaluator {
 				String.class),ethiopianDate.equals(null)? "": ethiopianDate.getDay()+"/"+ethiopianDate.getMonth()+"/"+ethiopianDate.getYear());
 				row.addColumnValue(new DataSetColumn("ArtStartDate", "Art StartDate", Date.class), obs.getValueDate());
                 row.addColumnValue(new DataSetColumn("Encounter", "Encounter Type", String.class), obs.getEncounter().getEncounterType().getName());
-				row.addColumnValue(new DataSetColumn("Regimen","Regmin",String.class), getRegmin(obs,evalContext));
+				row.addColumnValue(new DataSetColumn("Regimen","Regmin",String.class), getRegimen(obs,evalContext));
                 managObses.add(obs.getPerson());
                 
                 data.addRow(row);
@@ -125,7 +125,7 @@ public class HTsNewDataSetDefinitionEvaluator implements DataSetEvaluator {
 		return uniqPatientsId;
 	}
 	
-	private String getRegmin(Obs obs, EvaluationContext context) {
+	private String getRegimen(Obs obs, EvaluationContext context) {
 		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
 		
 		queryBuilder.select("obv.valueCoded").from(Obs.class, "obv")

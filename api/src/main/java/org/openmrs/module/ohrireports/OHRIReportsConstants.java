@@ -53,6 +53,8 @@ public class OHRIReportsConstants {
 	
 	public final static String ALL_PATIENTS_COHORT_UUID = "895d0025-84e2-4306-bdd9-66acc150ec21";
 	
+	public final static String PATIENT_WEIGHT = "895d0025-84e2-4306-bdd9-66acc150ec21";
+	
 	/**
 	 * Associated Concepts
 	 */
@@ -248,8 +250,20 @@ public class OHRIReportsConstants {
 	
 	public final static String PATIENT_STATUS = "160433AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	
+	//#region Concept Answer
+	
 	public final static String ALIVE = "160429AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	
 	public final static String RESTART = "ee957295-85b9-4433-bf12-45886cdc7dd1";
+	
+	public final static String DISCHARGED = "1692AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+	
+	public final static String DECEASED = "159AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+	
+	public final static String LOST_TO_FOLLOW_UP = "5240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+	
+	public final static String RAN_AWAY = "160431AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+	
+	//#endregion
 	
 }
