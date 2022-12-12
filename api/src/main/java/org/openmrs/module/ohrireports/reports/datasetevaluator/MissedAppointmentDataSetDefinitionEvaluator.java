@@ -37,6 +37,8 @@ import org.openmrs.module.reporting.evaluation.service.EvaluationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.concurrent.TimeUnit;
 
+import javax.validation.constraints.Null;
+
 @Handler(supports = { MissedAppointmentsDataSetDefinition.class })
 public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvaluator {
 	
@@ -60,6 +62,7 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 		for (Obs obses : obsList) {
 				Person person = obses.getPerson();
 				Concept status = patientStatus.get(person.getId());
+				Boolean s = true;
 				EthiopianDate ethiopianDate = null;
 				long diffrence = 0;
 				SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
@@ -71,30 +74,57 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-				try {
-					ethiopianDate=	EthiopianDateConverter.ToEthiopianDate(obses.getValueDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate() );
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				row = new DataSetRow();
+
+				
+				if (mads.getMissedDateFrom()!=null){
+					if (diffrence >= mads.getMissedDateFrom()){	
+						s=true;				
+					}
+					else{
+						s=false;
+					}
 				}
-                row = new DataSetRow();
-                row.addColumnValue(new DataSetColumn("PersonID", "#", Integer.class), person.getPersonId());
-                row.addColumnValue(new DataSetColumn("Name", "Name", String.class), person.getNames());
-                row.addColumnValue(new DataSetColumn("Age", "Age", Integer.class), person.getAge());
-                row.addColumnValue(new DataSetColumn("Gender", "Gender", Integer.class), person.getGender());
-				row.addColumnValue(new DataSetColumn("No_of_missed_days", "No of missed days", 
-				Long.class), diffrence);
-                row.addColumnValue(new DataSetColumn("TreatmentEndDate", "Treatment End Date", 
-				Date.class), obses.getValueDate());	
-				row.addColumnValue(new DataSetColumn("TreatmentEndDateETC", "Treatment End Date ETH", 
-				String.class),ethiopianDate.equals(null)? "": ethiopianDate.getDay()+"/"+ethiopianDate.getMonth()+"/"+ethiopianDate.getYear());		
-				row.addColumnValue(new DataSetColumn("Status", "Status", 
-				String.class), status.equals(null)?"":status.getName().getName());
-				data.addRow(row);
-            
+
+				if (mads.getMissedDateTo()!=null){
+					if(diffrence <= mads.getMissedDateTo()){
+						s=true;
+						}
+					else{
+						s=false;
+					}
+
+				}    
+				if(s==true){
+					row = createRow(row,person, diffrence, obses);
+					data.addRow(row);
+				}      
 		
 		}
 		return data;
+	}
+	private DataSetRow createRow(DataSetRow row,Person person, Long diffrence, Obs obses){
+		EthiopianDate ethiopianDate=null;
+		try {
+			 ethiopianDate =	EthiopianDateConverter.ToEthiopianDate(obses.getValueDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate() );
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Concept status = patientStatus.get(person.getId());
+		row.addColumnValue(new DataSetColumn("PersonID", "#", Integer.class), person.getPersonId());
+		row.addColumnValue(new DataSetColumn("Name", "Name", String.class), person.getNames());
+		row.addColumnValue(new DataSetColumn("Age", "Age", Integer.class), person.getAge());
+		row.addColumnValue(new DataSetColumn("Gender", "Gender", Integer.class), person.getGender());
+		row.addColumnValue(new DataSetColumn("No_of_missed_days", "No of missed days", 
+		Long.class), diffrence);
+		row.addColumnValue(new DataSetColumn("TreatmentEndDate", "Treatment End Date", 
+		Date.class), obses.getValueDate());	
+		row.addColumnValue(new DataSetColumn("TreatmentEndDateETC", "Treatment End Date ETH", 
+		String.class),ethiopianDate.equals(null)? "": ethiopianDate.getDay()+"/"+ethiopianDate.getMonth()+"/"+ethiopianDate.getYear());		
+		row.addColumnValue(new DataSetColumn("Status", "Status", 
+		String.class), status.equals(null)?"":status.getName().getName());
+		return row;
 	}
 	private String current_date()
 	{
@@ -121,8 +151,25 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 		.whereEqual("obv.concept",conceptService.getConceptByUuid(TREATMENT_END_DATE))
 		.and()
 		.whereLess("obv.valueDatetime", current_date())
-		.and()
-		.whereIdIn("obv.personId", patientsId)
+		.and();
+		if (mads.getEndDate()!=null)
+		{
+			queryBuilder.whereLess("obv.valueDatetime", mads.getEndDate()).and();
+		
+		}
+		if (mads.getStartDate()!=null){
+			queryBuilder.whereGreater("obv.valueDatetime", mads.getStartDate()).and();
+		}
+		if (mads.getGender()!=null)
+		{
+			queryBuilder.whereLike("obs.person.gender", mads.getGender()).and();
+		}
+		if (mads.getAdherence()!=null)
+		{
+			queryBuilder.whereLike("obs.person.gender", mads.getAdherence()).and();
+		}
+
+		queryBuilder.whereIdIn("obv.personId", patientsId)
         .orderDesc("obv.personId,obv.obsDatetime") ;
 
 		for (Obs obs : evaluationService.evaluateToList(queryBuilder, Obs.class, context)) {

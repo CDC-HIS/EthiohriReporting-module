@@ -24,6 +24,7 @@ import org.openmrs.module.reporting.report.ReportRequest;
 import org.openmrs.module.reporting.report.definition.ReportDefinition;
 import org.openmrs.module.reporting.report.manager.ReportManager;
 import org.springframework.stereotype.Component;
+import java.util.Collection;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.HTS_FOLLOW_UP_ENCOUNTER_TYPE;
 
 @Component
@@ -46,6 +47,7 @@ public class Missed_Appointment_Report implements ReportManager {
 	
 	@Override
 	public List<Parameter> getParameters() {
+		
 		Parameter startDate = new Parameter("startDate", "Start Date", Date.class);
 		startDate.setRequired(false);
 		Parameter startDateGC = new Parameter("startDateGC", " ", Date.class);
@@ -54,7 +56,15 @@ public class Missed_Appointment_Report implements ReportManager {
 		endDate.setRequired(false);
 		Parameter endDateGC = new Parameter("endDateGC", " ", Date.class);
 		endDateGC.setRequired(false);
-		return Arrays.asList(startDate, startDateGC, endDate, endDateGC);
+		Parameter missedDateTo = new Parameter("missedDateTo", " missed Date To", Integer.class);
+		missedDateTo.setRequired(false);
+		Parameter missedDateFrom = new Parameter("missedDateFrom", " missed Date From", Integer.class);
+		missedDateFrom.setRequired(false);
+		Parameter gender = new Parameter("gender", "gender", String.class);
+		gender.addToWidgetConfiguration("optionValues","male, female, all");
+		Parameter adherence = new Parameter("adherence","adherence",String.class);
+		adherence.addToWidgetConfiguration("optionValues","All,fair,good,poor");
+		return Arrays.asList(startDate, startDateGC, endDate, endDateGC,gender,adherence,missedDateFrom,missedDateTo);
 		
 	}
 	
@@ -71,7 +81,7 @@ public class Missed_Appointment_Report implements ReportManager {
 		MissedAppointmentsDataSetDefinition.setEncounterType(Context.getEncounterService().getEncounterTypeByUuid(
 		    HTS_FOLLOW_UP_ENCOUNTER_TYPE));
 		reportDefinition.addDataSetDefinition("TX-New",
-		    map(MissedAppointmentsDataSetDefinition, "startDate=${startDateGC},endDate=${endDateGC}"));
+		    map(MissedAppointmentsDataSetDefinition, "startDate=${startDateGC},endDate=${endDateGC},gender=${gender}, adherence=${adherence}, missedDateFrom=${missedDateFrom}, missedDateTo=${missedDateTo}"));
 		return reportDefinition;
 	}
 	
