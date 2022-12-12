@@ -14,7 +14,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.openmrs.api.context.Context;
-import org.openmrs.module.ohrireports.reports.datasetdefinition.HtsNewDataSetDefinitionAdx;
+import org.openmrs.module.ohrireports.reports.datasetdefinition.MissedAppointmentsDataSetDefinition;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
 import org.openmrs.module.reporting.evaluation.parameter.Parameter;
 import org.openmrs.module.reporting.evaluation.parameter.Parameterizable;
@@ -27,16 +27,16 @@ import org.springframework.stereotype.Component;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.HTS_FOLLOW_UP_ENCOUNTER_TYPE;
 
 @Component
-public class TX_New_ReportAdx implements ReportManager {
+public class Missed_Appointment_Report implements ReportManager {
 	
 	@Override
 	public String getUuid() {
-		return "5f1e54f3-d171-4a41-861c-304f240d618b";
+		return "4e29b77f-eedd-4486-9f08-be039a894ff7";
 	}
 	
 	@Override
 	public String getName() {
-		return "TX New ADX";
+		return "TX New";
 	}
 	
 	@Override
@@ -66,12 +66,12 @@ public class TX_New_ReportAdx implements ReportManager {
 		reportDefinition.setDescription(getDescription());
 		reportDefinition.setParameters(getParameters());
 		
-		HtsNewDataSetDefinitionAdx htsNewDataSetDefinition = new HtsNewDataSetDefinitionAdx();
-		htsNewDataSetDefinition.addParameters(getParameters());
-		htsNewDataSetDefinition.setEncounterType(Context.getEncounterService().getEncounterTypeByUuid(
+		MissedAppointmentsDataSetDefinition MissedAppointmentsDataSetDefinition  = new MissedAppointmentsDataSetDefinition();
+		MissedAppointmentsDataSetDefinition.addParameters(getParameters());
+		MissedAppointmentsDataSetDefinition.setEncounterType(Context.getEncounterService().getEncounterTypeByUuid(
 		    HTS_FOLLOW_UP_ENCOUNTER_TYPE));
-		reportDefinition.addDataSetDefinition("TX-New Aggregate by Age and Gender",
-		    map(htsNewDataSetDefinition, "startDate=${startDateGC},endDate=${endDateGC}"));
+		reportDefinition.addDataSetDefinition("TX-New",
+		    map(MissedAppointmentsDataSetDefinition, "startDate=${startDateGC},endDate=${endDateGC}"));
 		return reportDefinition;
 	}
 	

@@ -247,6 +247,7 @@ public class OHRIReportsConstants {
 	public final static String COVID19_REPORT_DESIGN_UUID = "4e33bb15-ac1c-4e82-a863-77cb705c6512";
 	
 	public final static String PATIENT_STATUS = "160433AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+	public final static String STOP = "1692AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	
 	public final static String ALIVE = "160429AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	
