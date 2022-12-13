@@ -63,10 +63,12 @@ public class MonthlyVisitListDefinitionEvaluator implements DataSetEvaluator {
 		Concept patientWeighConcept = conceptService.getConceptByUuid(PATIENT_WEIGHT);
 		Concept artStartConcept = conceptService.getConceptByUuid(ART_START_DATE);
 		Concept patientStatusConcept = conceptService.getConceptByUuid(PATIENT_STATUS);
-		
+		Concept patientMobileNumberConcept = conceptService.getConceptByUuid(PATIENT_PHONE_NUMBER);
+		int seq=1;
 		for (Encounter encounter : encounters) {
 			Patient patient = encounter.getPatient();
 			DataSetRow dataSetRow = new DataSetRow();
+			dataSetRow.addColumnValue(new DataSetColumn("Seq", "#", Integer.class), seq);
 			dataSetRow.addColumnValue(new DataSetColumn("Person Name", "FullName", String.class), patient.getPersonName());
 			dataSetRow.addColumnValue(new DataSetColumn("Age", "Age", Integer.class), patient.getAge());
 			dataSetRow.addColumnValue(new DataSetColumn("Gender", "Sex", String.class), patient.getGender());
@@ -80,9 +82,12 @@ public class MonthlyVisitListDefinitionEvaluator implements DataSetEvaluator {
 				if (obs.getConcept().equals(patientStatusConcept) && obs.getValueCodedName() != null)
 					dataSetRow.addColumnValue(new DataSetColumn("FollowUpStatus", "Follow Up Status", String.class), obs
 					        .getValueCodedName().getName());
-				
+				if(obs.getConcept().equals(patientMobileNumberConcept))
+				dataSetRow.addColumnValue(new DataSetColumn("Mobile", "Mobile", String.class), obs
+					        .getValueText());
 			}
-			
+
+			seq++;
 			dataSet.addRow(dataSetRow);
 		}
 		return dataSet;
@@ -128,8 +133,12 @@ public class MonthlyVisitListDefinitionEvaluator implements DataSetEvaluator {
 	
 	private List<Concept> getValueCodedConcepts() {
 		
-		return Arrays.asList(conceptService.getConceptByUuid(RAN_AWAY), conceptService.getConceptByUuid(DECEASED),
-		    conceptService.getConceptByUuid(DISCHARGED), conceptService.getConceptByUuid(LOST_TO_FOLLOW_UP));
+		return Arrays.asList(
+			conceptService.getConceptByUuid(RAN_AWAY),
+		    conceptService.getConceptByUuid(DECEASED),
+		    conceptService.getConceptByUuid(DISCHARGED),
+		    conceptService.getConceptByUuid(LOST_TO_FOLLOW_UP)
+			);
 	}
 	
 }

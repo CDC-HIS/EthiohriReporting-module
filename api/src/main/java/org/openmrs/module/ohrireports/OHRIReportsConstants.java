@@ -266,4 +266,6 @@ public class OHRIReportsConstants {
 	
 	//#endregion
 	
+	public final static String PATIENT_PHONE_NUMBER = "166458AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+	
 }

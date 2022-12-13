@@ -1,8 +1,10 @@
 package org.openmrs.module.ohrireports.reports.hts;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import org.openmrs.module.ohrireports.reports.datasetdefinition.MonthlyVisitListDataSetDefinition;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
@@ -41,14 +43,16 @@ public class MonthlyVisitList implements ReportManager {
 	@Override
 	public List<Parameter> getParameters() {
 		Parameter startDate = new Parameter("startDate", "From Date", Date.class);
-		startDate.setRequired(false);
+		startDate.setRequired(true);
 		Parameter startDateGC = new Parameter("startDateGC", " ", Date.class);
-		startDateGC.setRequired(false);
+		startDateGC.setRequired(true);
 		Parameter endDate = new Parameter("endDate", "To Date", Date.class);
-		endDate.setRequired(false);
+		endDate.setRequired(true);
 		Parameter endDateGC = new Parameter("endDateGC", " ", Date.class);
-		endDateGC.setRequired(false);
-		return Arrays.asList(startDate, startDateGC, endDate, endDateGC);
+		endDateGC.setRequired(true);
+		Parameter parameter = new Parameter("Gender", "Gender", String.class);
+		parameter.addToWidgetConfiguration("codedOptions", "Male,Female,All");
+		return Arrays.asList(startDate, startDateGC, endDate, endDateGC, parameter);
 		
 	}
 	
@@ -59,7 +63,6 @@ public class MonthlyVisitList implements ReportManager {
 		reportDefinition.setName(getName());
 		reportDefinition.setDescription(getDescription());
 		reportDefinition.setParameters(getParameters());
-		
 		MonthlyVisitListDataSetDefinition mvlDataSetDefinition = new MonthlyVisitListDataSetDefinition();
 		mvlDataSetDefinition.addParameters(getParameters());
 		reportDefinition.addDataSetDefinition("mvl-P",
