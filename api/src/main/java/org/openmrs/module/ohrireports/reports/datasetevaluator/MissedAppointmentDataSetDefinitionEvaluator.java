@@ -61,7 +61,7 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
      
 		for (Obs obses : obsList) {
 				Person person = obses.getPerson();
-				Concept status = patientStatus.get(person.getId());
+				// Concept status = patientStatus.get(person.getId());
 				Boolean s = true;
 				EthiopianDate ethiopianDate = null;
 				long diffrence = 0;
@@ -78,31 +78,30 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 
 				
 				if (mads.getMissedDateFrom()!=null){
+					s=false;
 					if (diffrence >= mads.getMissedDateFrom()){	
 						s=true;				
 					}
-					else{
-						s=false;
+					
 					}
-				}
 
 				if (mads.getMissedDateTo()!=null){
+					if (s==true){
+						s=false;
 					if(diffrence <= mads.getMissedDateTo()){
 						s=true;
 						}
-					else{
-						s=false;
 					}
-
-				}    
+					}    
 				if(s==true){
 					row = createRow(row,person, diffrence, obses);
 					data.addRow(row);
-				}      
+					}      
 		
 		}
 		return data;
 	}
+
 	private DataSetRow createRow(DataSetRow row,Person person, Long diffrence, Obs obses){
 		EthiopianDate ethiopianDate=null;
 		try {
@@ -124,8 +123,10 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 		String.class),ethiopianDate.equals(null)? "": ethiopianDate.getDay()+"/"+ethiopianDate.getMonth()+"/"+ethiopianDate.getYear());		
 		row.addColumnValue(new DataSetColumn("Status", "Status", 
 		String.class), status.equals(null)?"":status.getName().getName());
+
 		return row;
 	}
+
 	private String current_date()
 	{
 		SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
@@ -137,6 +138,7 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 	private List<Obs> getTxCurrPatients(MissedAppointmentsDataSetDefinition mads, EvaluationContext context) {
 		
 		List<Integer> patientsId = getListOfALiveorRestartorSTOPPatientObservertions(context, mads);
+		List<Integer> dispenceCode= getListOfPatientwithDispenceCode(context, mads,patientsId);
 		
 		List<Person> patients = new ArrayList<>();
 		List<Obs> obseList = new ArrayList<>();
@@ -210,5 +212,33 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 
         return uniqiObs;
     }
+	private List<Integer> getListOfPatientwithDispenceCode(EvaluationContext context,MissedAppointmentsDataSetDefinition mads, List <Integer> patientsId) {
+      
+        List<Integer> uniqiObs =new ArrayList<>();
+        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
+      
+        queryBuilder.select("obv")
+        .from(Obs.class,"obv")
+		.whereEqual("obv.encounter.encounterType", mads.getEncounterType())
+		.and()
+      	.whereEqual("obv.concept", conceptService.getConceptByUuid("DispenseDose"))
+		.and()
+		.whereIdIn("obv.personId", patientsId);
+		// .and().whereLess("obv.obsDatetime", mads.getEndDate());
+		queryBuilder.orderDesc("obv.personId,obv.obsDatetime");
+
+		List<Obs> liveObs = evaluationService.evaluateToList(queryBuilder,Obs.class, context);
+		
+
+        for (Obs obs :liveObs){
+			if(!uniqiObs.contains(obs.getPersonId())){
+				uniqiObs.add(obs.getPersonId());
+				patientStatus.put(obs.getPersonId(), obs.getValueCoded());
+			}	
+		}
+
+        return uniqiObs;
+    }
+	
 	
 }
