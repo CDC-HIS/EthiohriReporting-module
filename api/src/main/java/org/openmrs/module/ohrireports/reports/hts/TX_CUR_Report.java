@@ -22,6 +22,8 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.TXCurrDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.library.EncounterDataLibrary;
 import org.openmrs.module.ohrireports.reports.library.PatientDataLibrary;
+import org.openmrs.module.reporting.common.ExcelBuilder;
+import org.openmrs.module.reporting.common.ExcelUtil;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
 import org.openmrs.module.reporting.evaluation.parameter.Parameter;
 import org.openmrs.module.reporting.evaluation.parameter.Parameterizable;
@@ -30,6 +32,7 @@ import org.openmrs.module.reporting.report.ReportDesign;
 import org.openmrs.module.reporting.report.ReportRequest;
 import org.openmrs.module.reporting.report.definition.ReportDefinition;
 import org.openmrs.module.reporting.report.manager.ReportManager;
+import org.openmrs.module.reporting.report.manager.ReportManagerUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -101,9 +104,13 @@ public class TX_CUR_Report implements ReportManager {
 	}
 	
 	@Override
-	public List<ReportDesign> constructReportDesigns(ReportDefinition reportDefinition){
+	public List<ReportDesign> constructReportDesigns(ReportDefinition reportDefinition) {
+		ReportDesign excelreportDesign = ReportManagerUtil.createExcelDesign("b63d7d31-c6c7-48a0-af0e-33dad1e27186",
+		    reportDefinition);
+		ReportDesign csvreportDesign = ReportManagerUtil.createCsvReportDesign("dc31459d-713d-4422-aded-df4d6216e8b2",
+		    reportDefinition);
 		
-		return new ArrayList<>();
+		return Arrays.asList(excelreportDesign, csvreportDesign);
 	}
 	
 	@Override
