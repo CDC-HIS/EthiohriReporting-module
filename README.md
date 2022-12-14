@@ -1,2 +1,2 @@
-# openmrs-module-ohri-reports
-OHRI Reporting module
+# Ethiohri Reporting Module
+EthiOHRI Reporting module - Missed Appointment report

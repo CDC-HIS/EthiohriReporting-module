@@ -55,7 +55,7 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 		
 		SimpleDataSet data = new SimpleDataSet(dataSetDefinition, evalContext);
 		
-		List<Obs> obsList = getTxCurrPatients(mads, evalContext);
+		List<Obs> obsList = getMissedaptPatients(mads, evalContext);
 		
 		DataSetRow row = null;
      
@@ -135,7 +135,7 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 		
 	}
 
-	private List<Obs> getTxCurrPatients(MissedAppointmentsDataSetDefinition mads, EvaluationContext context) {
+	private List<Obs> getMissedaptPatients(MissedAppointmentsDataSetDefinition mads, EvaluationContext context) {
 		
 		List<Integer> patientsId = getListOfALiveorRestartorSTOPPatientObservertions(context, mads);
 		List<Integer> dispenceCode= getListOfPatientwithDispenceCode(context, mads,patientsId);
