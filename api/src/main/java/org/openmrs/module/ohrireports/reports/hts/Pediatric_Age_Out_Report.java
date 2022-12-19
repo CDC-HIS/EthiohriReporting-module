@@ -19,7 +19,7 @@ import java.util.List;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.EncounterService;
 import org.openmrs.api.context.Context;
-import org.openmrs.module.ohrireports.reports.datasetdefinition.TXCurrDataSetDefinition;
+import org.openmrs.module.ohrireports.reports.datasetdefinition.PediatricAgeOutDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.library.EncounterDataLibrary;
 import org.openmrs.module.ohrireports.reports.library.PatientDataLibrary;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
@@ -55,7 +55,7 @@ public class Pediatric_Age_Out_Report implements ReportManager {
 	
 	@Override
 	public String getName() {
-		return "TX CURR";
+		return "Pediatric AgeOut";
 	}
 	
 	@Override
@@ -74,8 +74,14 @@ public class Pediatric_Age_Out_Report implements ReportManager {
 		endDate.setRequired(false);
 		Parameter endDateGC = new Parameter("endDateGC", " ", Date.class);
 		endDateGC.setRequired(false);
-		Parameter ageOut = new Parameter();
-		return Arrays.asList(startDate, startDateGC, endDate, endDateGC);
+		Parameter gender = new Parameter("gender", "gender", String.class);
+		gender.addToWidgetConfiguration("optionValues","male, female, all");
+		Parameter ageOut = new Parameter("ageOut", "ageOut", String.class);
+		ageOut.addToWidgetConfiguration("optionValues","yes, no, all");
+		Parameter patientStatus = new Parameter("patientStatus", "Patient Status", String.class);
+		patientStatus.addToWidgetConfiguration("optionValues", "Alive,Restart,Lost,Drop,Dead");
+
+		return Arrays.asList(startDate, startDateGC, endDate, endDateGC, ageOut, patientStatus);
 	}
 	
 	@Override
@@ -83,14 +89,13 @@ public class Pediatric_Age_Out_Report implements ReportManager {
 		ReportDefinition reportDefinition = new ReportDefinition();
 		reportDefinition.setUuid(getUuid());
 		reportDefinition.setName(getName());
-		reportDefinition.setDescription(getDescription());
-		
+		reportDefinition.setDescription(getDescription());		
 		reportDefinition.setParameters(getParameters());
-		TXCurrDataSetDefinition txCurrDataSetDefinition = new TXCurrDataSetDefinition();
-		txCurrDataSetDefinition.addParameters(getParameters());
-		txCurrDataSetDefinition.setEncounterType(Context.getEncounterService().getEncounterTypeByUuid(
+		PediatricAgeOutDataSetDefinition PediatricAgeOutDataSetDefinition = new PediatricAgeOutDataSetDefinition();
+		PediatricAgeOutDataSetDefinition.addParameters(getParameters());
+		PediatricAgeOutDataSetDefinition.setEncounterType(Context.getEncounterService().getEncounterTypeByUuid(
 		    HTS_FOLLOW_UP_ENCOUNTER_TYPE));
-		reportDefinition.addDataSetDefinition("Tx-Curr", map(txCurrDataSetDefinition, "endDate=${endDateGC}"));
+		reportDefinition.addDataSetDefinition("Pediatric Age Out", map(PediatricAgeOutDataSetDefinition, "ageOutendDate=${endDateGC}, ageOutstartDate=${startDateGC}, gender=${gender}, ageOutStatus=${ageout}, patientStatus=${patientStatus}"));
 		return reportDefinition;
 	}
 	

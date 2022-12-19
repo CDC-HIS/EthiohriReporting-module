@@ -52,11 +52,11 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 	@Override
 	public DataSet evaluate(DataSetDefinition dataSetDefinition, EvaluationContext evalContext) throws EvaluationException {
 		
-		PediatricAgeOutDataSetDefinition mads = (PediatricAgeOutDataSetDefinition) dataSetDefinition;
+		PediatricAgeOutDataSetDefinition pads = (PediatricAgeOutDataSetDefinition) dataSetDefinition;
 		
 		SimpleDataSet data = new SimpleDataSet(dataSetDefinition, evalContext);
 		
-		List<Obs> obsList = getTxCurrPatients(mads, evalContext);
+		List<Obs> obsList = getPediatricPatients(pads, evalContext);
 		
 		DataSetRow row = null;
      
@@ -77,23 +77,6 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 				}
 				row = new DataSetRow();
 
-				
-				if (mads.getMissedDateFrom()!=null){
-					s=false;
-					if (diffrence >= mads.getMissedDateFrom()){	
-						s=true;				
-					}
-					
-					}
-
-				if (mads.getMissedDateTo()!=null){
-					if (s==true){
-						s=false;
-					if(diffrence <= mads.getMissedDateTo()){
-						s=true;
-						}
-					}
-					}    
 				if(s==true){
 					row = createRow(row,person, diffrence, obses);
 					data.addRow(row);
