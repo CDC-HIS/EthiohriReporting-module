@@ -9,6 +9,10 @@ target
 *.releaseBackup
 release.properties
 README.html
+#vscode files
+.vscode/*
+#runtime configuration
+openmrs-runtime.properties
 
 # Package Files #
 *.jar
