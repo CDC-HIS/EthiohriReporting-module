@@ -54,6 +54,7 @@ public class TXCurrDataSetDefinitionEvaluator implements DataSetEvaluator {
 		DataSetRow row = null;
      
 		for (Obs obses : obsList) {
+			
 				Person person = obses.getPerson();
 				Concept status = patientStatus.get(person.getId());
 				EthiopianDate ethiopianDate = null;
