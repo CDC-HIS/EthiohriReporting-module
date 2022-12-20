@@ -49,8 +49,14 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 	ConceptService conceptService;
     HashMap<Integer,Concept> patientStatus = new HashMap<>();
 	HashMap<Integer,Date> patient15birthday = new HashMap<>();
+	HashMap<Integer,String> patientAgeOut= new HashMap<>();
+	HashMap<String,String> patientStatusdict= new HashMap<>();
+	
+
 	@Override
 	public DataSet evaluate(DataSetDefinition dataSetDefinition, EvaluationContext evalContext) throws EvaluationException {
+		patientStatusdict.put("alive",ALIVE);
+		patientStatusdict.put("restart", RESTART);
 		
 		PediatricAgeOutDataSetDefinition pads = (PediatricAgeOutDataSetDefinition) dataSetDefinition;
 		
@@ -85,10 +91,16 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 		}
 		return data;
 	}
-	private Date getMinBirthDate(){
+	private String getMinBirthDate(Date birthdate){
 		Calendar curr_date= Calendar.getInstance();
 		curr_date.add(Calendar.YEAR, -15);
-		return curr_date.getTime();
+		if (birthdate.getTime() >= curr_date.getTime().getTime()){
+			return "no";
+		}
+		else{
+			return "yes";
+		}
+		
 	}
 	private DataSetRow createRow(DataSetRow row,Person person, Long diffrence, Obs obses){
 		EthiopianDate ethiopianDate=null;
@@ -111,6 +123,8 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 		String.class),ethiopianDate.equals(null)? "": ethiopianDate.getDay()+"/"+ethiopianDate.getMonth()+"/"+ethiopianDate.getYear());		
 		row.addColumnValue(new DataSetColumn("Status", "Status", 
 		String.class), status.equals(null)?"":status.getName().getName());
+		row.addColumnValue(new DataSetColumn("15thBirthDate","15th BirthDate",Date.class), patient15birthday.get(person.getId()));
+		row.addColumnValue(new DataSetColumn("ageOutStatus","Age Out Status",String.class), patientAgeOut.get(person.getId()));
 
 		return row;
 	}
@@ -176,8 +190,9 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
       	.whereEqual("obv.concept", conceptService.getConceptByUuid(PATIENT_STATUS))
 		.and();
 		if (pads.getPatientStatus()!=null){
+		
 	
-		queryBuilder.whereEqual("obv.valueCoded", pads.getPatientStatus());
+		queryBuilder.whereEqual("obv.valueCoded", conceptService.getConceptByUuid(patientStatusdict.get(pads.getPatientStatus())));
 		}
 		// .and().whereLess("obv.obsDatetime", mads.getEndDate());
 		queryBuilder.orderDesc("obv.personId,obv.obsDatetime");
@@ -194,14 +209,14 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 
         return uniqiObs2;
     }
-	private List<Integer> getListOfPatientbelow15atART(EvaluationContext context,PediatricAgeOutDataSetDefinition mads, List <Integer> patientsId) {
+	private List<Integer> getListOfPatientbelow15atART(EvaluationContext context,PediatricAgeOutDataSetDefinition pads, List <Integer> patientsId) {
       
         List<Integer> uniqiObs =new ArrayList<>();
         HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
       
         queryBuilder.select("obv")
         .from(Obs.class,"obv")
-		.whereEqual("obv.encounter.encounterType", mads.getEncounterType())
+		.whereEqual("obv.encounter.encounterType", pads.getEncounterType())
 		.and()
 		.whereEqual("obv.concept",conceptService.getConceptByUuid(ART_START_DATE))
 		.and()
@@ -219,15 +234,35 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 				Calendar artdate= Calendar.getInstance();
 				artdate.setTime(obs.getValueDatetime());
 				artdate.add(Calendar.YEAR, -15);
-				if (obs.getPerson().getBirthdate() != null && obs.getPerson().getBirthdate().getTime() > artdate.getTime().getTime()){
+				if (obs.getPerson().getBirthdate() != null){
+					if (obs.getPerson().getBirthdate().getTime() > artdate.getTime().getTime()){
 					Calendar fiftybirth= Calendar.getInstance();
 					fiftybirth.setTime(obs.getPerson().getBirthdate());
 					fiftybirth.add(Calendar.YEAR, 15);
-					uniqiObs.add(obs.getPersonId());
-					// if (getMinBirthDate().getTime() > obs.getPerson().getBirthdate().getTime()){
-					// 	out=true;
-					// }
-					patient15birthday.put(obs.getPersonId(), fiftybirth.getTime());
+					if (pads.getAgeOutStatus() != null){
+						if (pads.getAgeOutStatus() == "yes"){
+							if(getMinBirthDate(obs.getPerson().getBirthdate()) =="yes"){
+								uniqiObs.add(obs.getPersonId());
+								patientAgeOut.put(obs.getPersonId(), getMinBirthDate(obs.getPerson().getBirthdate()));
+
+							}
+
+						}
+						else{
+							if(getMinBirthDate(obs.getPerson().getBirthdate()) =="no"){
+								uniqiObs.add(obs.getPersonId());
+								patientAgeOut.put(obs.getPersonId(), getMinBirthDate(obs.getPerson().getBirthdate()));
+
+							}
+
+						}
+					}
+					else{
+						uniqiObs.add(obs.getPersonId());					
+						patient15birthday.put(obs.getPersonId(), fiftybirth.getTime());
+						patientAgeOut.put(obs.getPersonId(), getMinBirthDate(obs.getPerson().getBirthdate()));
+					}
+					}
 				}
 			}	
 		}

@@ -35,6 +35,14 @@ public class PediatricAgeOutDataSetDefinition extends BaseDataSetDefinition {
 
 
 
+	public String getAgeOutStatus() {
+		return ageOutStatus;
+	}
+
+	public void setAgeOutStatus(String ageOutStatus) {
+		this.ageOutStatus = ageOutStatus;
+	}
+
 	public Date getAgeOutstartDate() {
 		return ageOutstartDate;
 	}
