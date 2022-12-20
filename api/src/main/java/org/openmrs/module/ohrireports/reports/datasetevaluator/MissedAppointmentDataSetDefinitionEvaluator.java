@@ -48,6 +48,7 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 	@Autowired
 	ConceptService conceptService;
     HashMap<Integer,Concept> patientStatus = new HashMap<>();
+	HashMap<Integer,Concept> patientAdherence = new HashMap<>();
 	@Override
 	public DataSet evaluate(DataSetDefinition dataSetDefinition, EvaluationContext evalContext) throws EvaluationException {
 		
@@ -111,6 +112,7 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 			e.printStackTrace();
 		}
 		Concept status = patientStatus.get(person.getId());
+		Concept adherence  = patientAdherence.get(person.getId());
 		row.addColumnValue(new DataSetColumn("PersonID", "#", Integer.class), person.getPersonId());
 		row.addColumnValue(new DataSetColumn("Name", "Name", String.class), person.getNames());
 		row.addColumnValue(new DataSetColumn("Age", "Age", Integer.class), person.getAge());
@@ -123,6 +125,7 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 		String.class),ethiopianDate.equals(null)? "": ethiopianDate.getDay()+"/"+ethiopianDate.getMonth()+"/"+ethiopianDate.getYear());		
 		row.addColumnValue(new DataSetColumn("Status", "Status", 
 		String.class), status.equals(null)?"":status.getName().getName());
+		row.addColumnValue(new DataSetColumn("adherence","Adherence", String.class), adherence.equals(null)?"":adherence.getName().getName());
 
 		return row;
 	}
@@ -138,7 +141,6 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 	private List<Obs> getMissedaptPatients(MissedAppointmentsDataSetDefinition mads, EvaluationContext context) {
 		
 		List<Integer> patientsId = getListOfALiveorRestartorSTOPPatientObservertions(context, mads);
-		List<Integer> dispenceCode= getListOfPatientwithDispenceCode(context, mads,patientsId);
 		
 		List<Person> patients = new ArrayList<>();
 		List<Obs> obseList = new ArrayList<>();
@@ -166,10 +168,7 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 		{
 			queryBuilder.whereLike("obs.person.gender", mads.getGender()).and();
 		}
-		if (mads.getAdherence()!=null)
-		{
-			queryBuilder.whereLike("obs.person.gender", mads.getAdherence()).and();
-		}
+		
 
 		queryBuilder.whereIdIn("obv.personId", patientsId)
         .orderDesc("obv.personId,obv.obsDatetime") ;
@@ -185,7 +184,8 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 	}
 	private List<Integer> getListOfALiveorRestartorSTOPPatientObservertions(EvaluationContext context,MissedAppointmentsDataSetDefinition mads) {
       
-        List<Integer> uniqiObs =new ArrayList<>();
+        List<Integer> uniqiObs = new ArrayList<>();
+		List<Integer>uniqiObs2 = new ArrayList<>();
         HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
       
         queryBuilder.select("obv")
@@ -200,17 +200,15 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
 		// .and().whereLess("obv.obsDatetime", mads.getEndDate());
 		queryBuilder.orderDesc("obv.personId,obv.obsDatetime");
 
-		List<Obs> liveObs = evaluationService.evaluateToList(queryBuilder,Obs.class, context);
-		
-
+		List<Obs> liveObs = evaluationService.evaluateToList(queryBuilder,Obs.class, context);		
         for (Obs obs :liveObs){
 			if(!uniqiObs.contains(obs.getPersonId())){
 				uniqiObs.add(obs.getPersonId());
 				patientStatus.put(obs.getPersonId(), obs.getValueCoded());
 			}	
 		}
-
-        return uniqiObs;
+		uniqiObs2=getListOfPatientwithDispenceCode(context, mads, uniqiObs);
+        return uniqiObs2;
     }
 	private List<Integer> getListOfPatientwithDispenceCode(EvaluationContext context,MissedAppointmentsDataSetDefinition mads, List <Integer> patientsId) {
       
@@ -233,12 +231,34 @@ public class MissedAppointmentDataSetDefinitionEvaluator implements DataSetEvalu
         for (Obs obs :liveObs){
 			if(!uniqiObs.contains(obs.getPersonId())){
 				uniqiObs.add(obs.getPersonId());
-				patientStatus.put(obs.getPersonId(), obs.getValueCoded());
 			}	
 		}
+		getPatientAdherence(context,mads,uniqiObs);
 
         return uniqiObs;
     }
+	private void getPatientAdherence (EvaluationContext context, MissedAppointmentsDataSetDefinition mads, List<Integer> patientsId){
+		List<Integer> uniqiObs =new ArrayList<>();
+        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
+      
+        queryBuilder.select("obv")
+        .from(Obs.class,"obv")
+		.whereEqual("obv.encounter.encounterType", mads.getEncounterType())
+		.and()
+      	.whereEqual("obv.concept", conceptService.getConceptByUuid("adherence"))
+		.and().whereIdIn("obv.personId", patientsId);
+		queryBuilder.orderDesc("obv.personId,obv.obsDatetime");
+
+		List<Obs> liveObs = evaluationService.evaluateToList(queryBuilder,Obs.class, context);
+		
+        for (Obs obs :liveObs){
+			if(!uniqiObs.contains(obs.getPersonId())){
+				uniqiObs.add(obs.getPersonId());
+				patientAdherence.put(obs.getPersonId(), obs.getValueCoded());
+			}	
+		}
+
+	}
 	
 	
 }
