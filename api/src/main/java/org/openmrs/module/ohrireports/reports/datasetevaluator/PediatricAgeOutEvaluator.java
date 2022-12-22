@@ -68,25 +68,9 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
      
 		for (Obs obses : obsList) {
 				Person person = obses.getPerson();
-				// Concept status = patientStatus.get(person.getId());
-				Boolean s = true;
-				EthiopianDate ethiopianDate = null;
-				long diffrence = 0;
-				SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
-				try {
-					long numberOfMissed = formatter.parse(current_date()).getTime() - formatter.parse(formatter.format(obses.getValueDate())).getTime();
-					TimeUnit time = TimeUnit.DAYS; 
-					diffrence = time.convert(numberOfMissed, TimeUnit.MILLISECONDS);
-				} catch (ParseException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
 				row = new DataSetRow();
-
-				if(s==true){
-					row = createRow(row,person, diffrence, obses);
-					data.addRow(row);
-					}      
+				row = createRow(row,person, obses, evalContext);
+				data.addRow(row);  
 		
 		}
 		return data;
@@ -102,7 +86,7 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 		}
 		
 	}
-	private DataSetRow createRow(DataSetRow row,Person person, Long diffrence, Obs obses){
+	private DataSetRow createRow(DataSetRow row,Person person, Obs obses,EvaluationContext evalContext){
 		EthiopianDate ethiopianDate=null;
 		try {
 			 ethiopianDate =	EthiopianDateConverter.ToEthiopianDate(obses.getValueDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate() );
@@ -115,14 +99,13 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 		row.addColumnValue(new DataSetColumn("Name", "Name", String.class), person.getNames());
 		row.addColumnValue(new DataSetColumn("Age", "Age", Integer.class), person.getAge());
 		row.addColumnValue(new DataSetColumn("Gender", "Gender", Integer.class), person.getGender());
-		row.addColumnValue(new DataSetColumn("No_of_missed_days", "No of missed days", 
-		Long.class), diffrence);
 		row.addColumnValue(new DataSetColumn("TreatmentEndDate", "Treatment End Date", 
 		Date.class), obses.getValueDate());	
 		row.addColumnValue(new DataSetColumn("TreatmentEndDateETC", "Treatment End Date ETH", 
 		String.class),ethiopianDate.equals(null)? "": ethiopianDate.getDay()+"/"+ethiopianDate.getMonth()+"/"+ethiopianDate.getYear());		
 		row.addColumnValue(new DataSetColumn("Status", "Status", 
 		String.class), status.equals(null)?"":status.getName().getName());
+		row.addColumnValue(new DataSetColumn("Regimen","Regmin",String.class), getRegmin(obses,evalContext));
 		row.addColumnValue(new DataSetColumn("15thBirthDate","15th BirthDate",Date.class), patient15birthday.get(person.getId()));
 		row.addColumnValue(new DataSetColumn("ageOutStatus","Age Out Status",String.class), patientAgeOut.get(person.getId()));
 
@@ -209,6 +192,21 @@ public class PediatricAgeOutEvaluator implements DataSetEvaluator {
 
         return uniqiObs2;
     }
+	private String getRegmin(Obs obs, EvaluationContext context) {
+		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
+		
+		queryBuilder.select("obv.valueCoded").from(Obs.class, "obv")
+		        .whereInAny("obv.concept", conceptService.getConceptByUuid(REGIMEN))
+		        .whereEqual("obv.encounter", obs.getEncounter()).and().whereEqual("obv.person", obs.getPerson())
+		        .orderDesc("obv.obsDatetime").limit(1);
+		List<Concept> concepts = evaluationService.evaluateToList(queryBuilder, Concept.class, context);
+		
+		Concept data = null;
+		if (concepts != null && concepts.size() > 0)
+			data = concepts.get(0);
+		
+		return data == null ? "" : data.getName().getName();
+	}
 	private List<Integer> getListOfPatientbelow15atART(EvaluationContext context,PediatricAgeOutDataSetDefinition pads, List <Integer> patientsId) {
       
         List<Integer> uniqiObs =new ArrayList<>();
