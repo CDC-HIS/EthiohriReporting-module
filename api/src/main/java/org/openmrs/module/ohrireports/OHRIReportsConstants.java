@@ -11,6 +11,8 @@ package org.openmrs.module.ohrireports;
 
 import org.apache.xmlbeans.impl.xb.xsdschema.Public;
 
+import org.apache.xmlbeans.impl.xb.xsdschema.Public;
+
 public class OHRIReportsConstants {
 	
 	/**
@@ -254,28 +256,6 @@ public class OHRIReportsConstants {
 	
 	public final static String RESTART = "ee957295-85b9-4433-bf12-45886cdc7dd1";
 
-	//#region Type Of test UUI
-	 public final static String HPV_TEST = "9580690a-0e84-451a-ada9-c4478d999dc2";
 
-	 public final static String VIA_TEST = "8304ffef-ac7b-425c-af3b-6ddc4d052ca8";
-
-	 public final static String CYTOLOGY_TEST ="7ddb52f4-d817-4365-b46d-1dacdbda5c44";
-
-	 public final static String COLPOSCOPY_TEST ="160705AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-	 //TODO: Biopsy UUID is expected here
-   //#endregion
 	
-    //#region
-	 public final static String CRYOTHERAPY_TREATMENT = "8d16da90-a29e-4375-97e8-a47fe1e259e8";
-	 
-	 public final static String THERMOCOAGULATION_TREATMENT = "";
-
-	 public final static String LEEP_TREATMENT = "efa3d52d-68ae-486d-a9b1-608a289735a1";
-	//#endregion
-	//#region
-	 public final static String UNIQUE_ANTIRETROVAIRAL_THERAPY_UAN = "164402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-	 public final static String SERVICE_DELIVERY_POINT_NUMBER_MRN = "162054AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-	 //TODO: update as soon as the concept created 
-	 public final static String ADHERENCE_UUID= "";
-	//#endregion
 }
