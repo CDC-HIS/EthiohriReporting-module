@@ -275,5 +275,7 @@ public class OHRIReportsConstants {
 	//#region
 	 public final static String UNIQUE_ANTIRETROVAIRAL_THERAPY_UAN = "164402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	 public final static String SERVICE_DELIVERY_POINT_NUMBER_MRN = "162054AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+	 //TODO: update as soon as the concept created 
+	 public final static String ADHERENCE_UUID= "";
 	//#endregion
 }

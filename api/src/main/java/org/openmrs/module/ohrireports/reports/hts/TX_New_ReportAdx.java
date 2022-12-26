@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.openmrs.api.context.Context;
+import org.openmrs.module.ohrireports.cohorts.util.Utilities;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.HtsNewDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.HtsNewDataSetDefinitionAdx;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
@@ -72,19 +73,11 @@ public class TX_New_ReportAdx implements ReportManager {
 		htsNewDataSetDefinition.setEncounterType(Context.getEncounterService().getEncounterTypeByUuid(
 		    HTS_FOLLOW_UP_ENCOUNTER_TYPE));
 		reportDefinition.addDataSetDefinition("TX-New Aggregate by Age and Gender",
-		    map(htsNewDataSetDefinition, "startDate=${startDateGC},endDate=${endDateGC}"));
+		    Utilities.map(htsNewDataSetDefinition, "startDate=${startDateGC},endDate=${endDateGC}"));
 		return reportDefinition;
 	}
 	
-	public static <T extends Parameterizable> Mapped<T> map(T parameterizable, String mappings) {
-		if (parameterizable == null) {
-			throw new IllegalArgumentException("Parameterizable cannot be null");
-		}
-		if (mappings == null) {
-			mappings = ""; // probably not necessary, just to be safe
-		}
-		return new Mapped<T>(parameterizable, ParameterizableUtil.createParameterMappings(mappings));
-	}
+	
 	
 	@Override
 	public List<ReportDesign> constructReportDesigns(ReportDefinition reportDefinition) {

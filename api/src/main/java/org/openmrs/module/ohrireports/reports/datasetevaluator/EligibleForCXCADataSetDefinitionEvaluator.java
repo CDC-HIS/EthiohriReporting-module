@@ -145,11 +145,17 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 			throws EvaluationException {
 		this.evalContext = evalContext;
 		artStarted = conceptService.getConceptByUuid(ART_START_DATE);
+		
 		eligForCXCADataSetDefinition = (EligibleForCXCADataSetDefinition) dataSetDefinition;
+		
 		SimpleDataSet dataSet = new SimpleDataSet(eligForCXCADataSetDefinition, evalContext);
+		
 		populateReasonForEligibility();
+		
 		Map<Person,Integer> eligibleFemaleForCXCA = getListOfEligiblesForCXCA();
+		
 		int sequence = 1;
+		
 		eligibleFemaleForCXCA.forEach((p,k)->{
 			DataSetRow dataSetRow = new DataSetRow();
 			// Creating data column and adding to that.
@@ -182,13 +188,13 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 		reasonForEligibility.put(7, "Positive Result with No Treatment Date");
 
 	}
-
+	
 	private Object getAdherence(Person patient) {
-		// TODO: adherence concept to be created soon should be updated
+		// TODO: adherence and should be updated
 		return evaluationService.evaluateToObject(
 				new HqlQueryBuilder()
 						.from(Obs.class, "obs")
-						.whereEqual("obs.concept", conceptService.getConceptByUuid()),
+						.whereEqual("obs.concept", conceptService.getConceptByUuid(ADHERENCE_UUID)),
 				null, evalContext);
 	}
 

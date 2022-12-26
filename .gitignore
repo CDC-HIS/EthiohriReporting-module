@@ -32,7 +32,7 @@ omod/src/main/compass/sass-external/*
 # Rubygems build directories #
 omod/.rubygems
 omod/.rubygems-provided
-
+.vscode
 # Bower resources #
 bower_components
 ~/*
