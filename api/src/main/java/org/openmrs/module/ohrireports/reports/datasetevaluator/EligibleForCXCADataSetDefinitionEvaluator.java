@@ -1,24 +1,37 @@
 package org.openmrs.module.ohrireports.reports.datasetevaluator;
 
-import java.util.ArrayList;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.ADHERENCE_UUID;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.ART_START_DATE;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.COLPOSCOPY_TEST;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.CRYOTHERAPY_TREATMENT;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.CYTOLOGY_TEST;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.HPV_TEST;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.LEEP_TREATMENT;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.NEGATIVE;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.POSITIVE;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.SERVICE_DELIVERY_POINT_NUMBER_MRN;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.UNIQUE_ANTIRETROVAIRAL_THERAPY_UAN;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.VIA_TEST;
+
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.joda.time.DateTime;
 import org.openmrs.Concept;
 import org.openmrs.Encounter;
 import org.openmrs.EncounterType;
 import org.openmrs.Obs;
-import org.openmrs.Patient;
 import org.openmrs.Person;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.ConceptService;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.EligibleForCXCADataSetDefinition;
-import org.openmrs.module.reporting.common.RangeComparator;
 import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.DataSetColumn;
 import org.openmrs.module.reporting.dataset.DataSetRow;
@@ -30,7 +43,6 @@ import org.openmrs.module.reporting.evaluation.EvaluationException;
 import org.openmrs.module.reporting.evaluation.querybuilder.HqlQueryBuilder;
 import org.openmrs.module.reporting.evaluation.service.EvaluationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.*;
 
 /* ==========================================================================================
  * Report Tasks
@@ -138,25 +150,27 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 	private EvaluationContext evalContext;
 
 	private Concept artStarted;
-	private Map<Integer,String> reasonForEligibility = new HashMap<>();
+	private Map<Integer, String> reasonForEligibility = new HashMap<>();
 
 	@Override
 	public DataSet evaluate(DataSetDefinition dataSetDefinition, EvaluationContext evalContext)
 			throws EvaluationException {
 		this.evalContext = evalContext;
 		artStarted = conceptService.getConceptByUuid(ART_START_DATE);
-		
+
 		eligForCXCADataSetDefinition = (EligibleForCXCADataSetDefinition) dataSetDefinition;
-		
+
 		SimpleDataSet dataSet = new SimpleDataSet(eligForCXCADataSetDefinition, evalContext);
-		
+		if ( Objects.isNull(eligForCXCADataSetDefinition.getEndDate()) )
+			eligForCXCADataSetDefinition.setEndDate(Calendar.getInstance().getTime());
+
 		populateReasonForEligibility();
-		
-		Map<Person,Integer> eligibleFemaleForCXCA = getListOfEligiblesForCXCA();
-		
+
+		Map<Person, Integer> eligibleFemaleForCXCA = getListOfEligiblesForCXCA();
+
 		int sequence = 1;
-		
-		eligibleFemaleForCXCA.forEach((p,k)->{
+
+		eligibleFemaleForCXCA.forEach((p, k) -> {
 			DataSetRow dataSetRow = new DataSetRow();
 			// Creating data column and adding to that.
 			dataSetRow.addColumnValue(new DataSetColumn("PatientName", "Patient Name", String.class),
@@ -171,7 +185,8 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 			dataSetRow.addColumnValue(new DataSetColumn("LastARTRegimen ", "Last ART Regimen ", String.class),
 					getLastArtRegiment(p));
 			dataSetRow.addColumnValue(new DataSetColumn("Adherence", "Adherence", String.class), getAdherence(p));
-			dataSetRow.addColumnValue(new DataSetColumn("ReasonForEligibility", "Reason For Eligibility", String.class), reasonForEligibility.get(k));
+			dataSetRow.addColumnValue(new DataSetColumn("ReasonForEligibility", "Reason For Eligibility", String.class),
+					reasonForEligibility.get(k));
 			dataSet.addRow(dataSetRow);
 			// Next Visit Date
 		});
@@ -188,17 +203,23 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 		reasonForEligibility.put(7, "Positive Result with No Treatment Date");
 
 	}
-	
-	private Object getAdherence(Person patient) {
+
+	private String getAdherence(Person patient) {
 		// TODO: adherence and should be updated
-		return evaluationService.evaluateToObject(
+		Concept adhConcept = evaluationService.evaluateToObject(
 				new HqlQueryBuilder()
+						.select("obs.valueCoded")
 						.from(Obs.class, "obs")
+						.whereBetweenInclusive("obs.obsDatetime",
+						 eligForCXCADataSetDefinition.getStartDate(),
+								eligForCXCADataSetDefinition.getEndDate())
 						.whereEqual("obs.concept", conceptService.getConceptByUuid(ADHERENCE_UUID)),
 				null, evalContext);
+		return Objects.isNull(adhConcept) ? "" : adhConcept.getName().getName();
+
 	}
 
-	private String getPatientUAN(Person	 patient) {
+	private String getPatientUAN(Person patient) {
 		return evaluationService.evaluateToObject(
 				new HqlQueryBuilder()
 						.select("obs.valueText")
@@ -207,34 +228,40 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 								conceptService.getConceptByUuid(UNIQUE_ANTIRETROVAIRAL_THERAPY_UAN))
 						.and()
 						.whereEqual("obs.person", patient)
-						.whereLessOrEqualTo("obs.obsDatetime",
-								eligForCXCADataSetDefinition.getEndDate())
+						.whereBetweenInclusive("obs.obsDatetime",
+								eligForCXCADataSetDefinition.getStartDate(), eligForCXCADataSetDefinition.getEndDate())
 						.limit(1)
 						.orderDesc("obs.obsDatetime"),
 				String.class, evalContext);
 	}
 
-	private Object getLastArtRegiment(Person person) {
-		//TODO: art regiment concept to be created 
-		return evaluationService.evaluateToObject(new HqlQueryBuilder()
+	private String getLastArtRegiment(Person person) {
+		// TODO: art regiment concept to be created
+		Concept regConcept = evaluationService.evaluateToObject(new HqlQueryBuilder()
+				.select("obs.valueCoded")
 				.from(Obs.class, "obs")
 				.whereEqual("obs.person", person)
-				.whereLessOrEqualTo("obs.obsDatetime",
+				.whereBetweenInclusive("obs.obsDatetime",
+						eligForCXCADataSetDefinition.getStartDate(),
 						eligForCXCADataSetDefinition.getEndDate())
 				.limit(1)
-				.orderDesc("obs.obsDatetime"), String.class, evalContext);
+				.orderDesc("obs.obsDatetime"), Concept.class, evalContext);
+		return Objects.isNull(regConcept) ? "" : regConcept.getName().getName();
+
 	}
 
 	private Object GetLastFollowUp(Person person) {
-		 EncounterType encounterType =  evaluationService
-		.evaluateToObject(new HqlQueryBuilder()
-		.select("encounter.encounterType")
-		.from(Encounter.class,"encounter")
-		.whereEqual("encounter.patient", person)
-		.whereLessOrEqualTo("encounter.encounterDatetime",
-						eligForCXCADataSetDefinition.getEndDate())
-				.limit(1), EncounterType.class, evalContext);
-		return encounterType.equals(null)?"":encounterType.getName();
+		EncounterType encounterType = evaluationService
+				.evaluateToObject(new HqlQueryBuilder()
+						.select("encounter.encounterType")
+						.from(Encounter.class, "encounter")
+						.whereEqual("encounter.patient", person)
+						.whereBetweenInclusive("encounter.encounterDatetime",
+								eligForCXCADataSetDefinition.getStartDate(),
+								eligForCXCADataSetDefinition.getEndDate())
+						.limit(1), EncounterType.class, evalContext);
+
+		return Objects.isNull(encounterType) ? "" : encounterType.getName();
 	}
 
 	private String getPatientMRN(Person person) {
@@ -244,62 +271,60 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 				.whereEqual("obs.concept", conceptService.getConceptByUuid(SERVICE_DELIVERY_POINT_NUMBER_MRN))
 				.and()
 				.whereEqual("obs.person", person)
-				.whereLessOrEqualTo("obs.obsDatetime",
-						eligForCXCADataSetDefinition.getEndDate())
+				.whereBetweenInclusive("obs.obsDatetime",
+						eligForCXCADataSetDefinition.getStartDate(), eligForCXCADataSetDefinition.getEndDate())
 				.limit(1)
 				.orderDesc("obs.obsDatetime"), String.class, evalContext);
 	}
 
-	private Map<Person,Integer> getListOfEligiblesForCXCA() {
+	private Map<Person, Integer> getListOfEligiblesForCXCA() {
 		// Get list of female >=15 age
-		Map<Person,Integer> personList = getListOfEligiblesForCXCA(loadPatients());
+		Map<Person, Integer> personList = getListOfEligiblesForCXCA(loadPatients());
 
 		return personList;
 	}
 
-	private Map<Person,Integer> getListOfEligiblesForCXCA(List<Person> loadPatients) {
-		Map<Person,Integer> eligiblePersons = new HashMap<>();
+	private Map<Person, Integer> getListOfEligiblesForCXCA(List<Person> loadPatients) {
+		Map<Person, Integer> eligiblePersons = new HashMap<>();
 		for (Person person : loadPatients) {
-			if (!isArtStarted(person))
-				continue;
+		
 			// Case 1 - Never screened for CxCa – If there is no Screening Date/Sample
 			// Collection Date for any of the Screening Strategies - HPV, VIA, Cytology,
 			// Colposcopy and Biopsy.
 			if (!hasScreenedForCXCA(person)) {
-				eligiblePersons.put(person,1);
+				eligiblePersons.put(person, 1);
 			}
 			// Case 2 - VIA Screened Negative-Need Re-screening – 2 years after VIA
 			// Screening Result = Negative
 			else if (isVIAScreenedNegative(person)) {
-				eligiblePersons.put(person,2);
+				eligiblePersons.put(person, 2);
 			}
 			// Case 3 - HPV Screened Negative-Need Re-screening - 3 years after HPV
 			// Screening Result = Negative
 			else if (isHPVScreenedNegative(person)) {
-				eligiblePersons.put(person,3);
+				eligiblePersons.put(person, 3);
 			}
 			// Case 4 - Cytology Screened Negative-Need Re-screening - 3 years after
 			// Cytology Result = Negative
 			else if (isCytologyScreenedNegative(person)) {
-				eligiblePersons.put(person,4);
+				eligiblePersons.put(person, 4);
 
 			}
 			// Case 5 - HPV Positive but VIA Negative-Need Re-screening - Eligible for
 			// rescreen after 1 year from VIA screening date.
 			else if (isHPVPositiveAndVIANegative(person)) {
-				eligiblePersons.put(person,5);
+				eligiblePersons.put(person, 5);
 			}
 			// Case 6 - Treated with Cryotherapy/ Thermocoagulation/ LEEP - Eligible after 6
 			// months of the latest treatment Date.
 			else if (isTreatedWithCryotherapy(person)) {
-				eligiblePersons.put(person,6);
+				eligiblePersons.put(person, 6);
 
 			}
 			// Case 7 - Positive Result with No Treatment Date - Current Date will be
 			// eligibility date.
 			else if (isPositiveResultWithNoTreatment(person)) {
-				eligiblePersons.put(person,7);
-
+				eligiblePersons.put(person, 7);
 
 			}
 		}
@@ -313,24 +338,27 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 		return evaluationService
 				.evaluateToObject(
 						new HqlQueryBuilder()
-								.from(Obs.class, "obs")
+				.select("COUNT(obs)")
+				.from(Obs.class, "obs")
 								.whereEqual("obs.person", person)
 								.and()
 								.whereIn("obs.concept", getListOfCXCATreatments())
-								.whereLessOrEqualTo("obs.obsDatetime",
+								.whereBetweenInclusive("obs.obsDatetime",
+										eligForCXCADataSetDefinition.getStartDate(),
 										eligForCXCADataSetDefinition.getEndDate()),
 						Integer.class, evalContext) > 0;
 	}
 
 	private boolean isPositiveInOneOfTheTest(Person person) {
 		return evaluationService.evaluateToObject(new HqlQueryBuilder()
+				.select("COUNT(obs)")
 				.from(Obs.class, "obs")
-				.select("COUNT(obs.*)")
 				.whereIn("obs.concept", getListOfCXCATest())
 				.and()
 				.whereEqual("obs.valueCoded", conceptService.getConceptByUuid(POSITIVE))
 				.whereEqual("obs.person", person)
-				.whereLessOrEqualTo("obs.obsDatetime",
+				.whereBetweenInclusive("obs.obsDatetime",
+						eligForCXCADataSetDefinition.getStartDate(),
 						eligForCXCADataSetDefinition.getEndDate()),
 				Integer.class, evalContext) > 0;
 	}
@@ -346,12 +374,14 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 		return evaluationService
 				.evaluateToObject(
 						new HqlQueryBuilder()
+								.select("COUNT(obs)")
 								.from(Obs.class, "obs")
 								.whereEqual("obs.person", person)
 								.whereIn("obs.concept", getListOfCXCATreatments())
-								.whereLessOrEqualTo("obs.obsDatetime",
-										DateTime.parse(eligForCXCADataSetDefinition.getEndDate().toString())
-												.minusMonths(6)),
+								.whereBetweenInclusive("obs.obsDatetime",
+										eligForCXCADataSetDefinition.getStartDate(),
+
+										formatDate(eligForCXCADataSetDefinition.getEndDate(),Calendar.MONTH,-6)),
 						Integer.class, evalContext) > 0;
 	}
 
@@ -366,17 +396,16 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 			return evaluationService
 					.evaluateToObject(
 							new HqlQueryBuilder()
+									.select("COUNT(obs)")
 									.from(Obs.class, "obs")
 									.whereEqual("obs.concept", conceptService.getConceptByUuid(CYTOLOGY_TEST))
 									.and()
 									.whereEqual("obs.valueCode", conceptService.getConceptByUuid(NEGATIVE))
 									.and()
-									.whereLessOrEqualTo("obs.obsDatetime",
-											DateTime.parse(eligForCXCADataSetDefinition.getEndDate().toString())
-													.minusYears(3))
-									.whereEqual("obs.person", person)
-									.whereLessOrEqualTo("obs.obsDatetime",
-											eligForCXCADataSetDefinition.getEndDate()),
+									.whereBetweenInclusive("obs.obsDatetime",
+											eligForCXCADataSetDefinition.getStartDate(),
+											formatDate(eligForCXCADataSetDefinition.getEndDate(),-3))
+									.whereEqual("obs.person", person),
 							Integer.class, evalContext) > 0;
 		}
 		return false;
@@ -386,13 +415,15 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 		return evaluationService
 				.evaluateToObject(
 						new HqlQueryBuilder()
+								.select("COUNT(obs)")
 								.from(Obs.class, "obs")
 								.whereEqual("obs.concept", conceptService.getConceptByUuid(HPV_TEST))
 								.and()
 								.whereEqual("obs.valueCode", conceptService.getConceptByUuid(NEGATIVE))
 								.and()
 								.whereEqual("obs.person", person)
-								.whereLessOrEqualTo("obs.obsDatetime",
+								.whereBetweenInclusive("obs.obsDatetime",
+										eligForCXCADataSetDefinition.getStartDate(),
 										eligForCXCADataSetDefinition.getEndDate()),
 						Integer.class, evalContext) > 0;
 	}
@@ -401,17 +432,16 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 		return evaluationService
 				.evaluateToObject(
 						new HqlQueryBuilder()
+								.select("COUNT(obs)")
 								.from(Obs.class, "obs")
 								.whereEqual("obs.concept", conceptService.getConceptByUuid(CYTOLOGY_TEST))
 								.and()
 								.whereEqual("obs.valueCode", conceptService.getConceptByUuid(NEGATIVE))
 								.and()
-								.whereLessOrEqualTo("obs.obsDatetime",
-										DateTime.parse(eligForCXCADataSetDefinition.getEndDate().toString())
-												.minusYears(3))
-								.whereEqual("obs.person", person)
-								.whereLessOrEqualTo("obs.obsDatetime",
-										eligForCXCADataSetDefinition.getEndDate()),
+								.whereBetweenInclusive("obs.obsDatetime",
+										eligForCXCADataSetDefinition.getStartDate(),
+										formatDate(eligForCXCADataSetDefinition.getEndDate(),-3))
+								.whereEqual("obs.person", person),
 						Integer.class, evalContext) > 0;
 	}
 
@@ -419,17 +449,16 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 		return evaluationService
 				.evaluateToObject(
 						new HqlQueryBuilder()
+								.select("COUNT(obs)")
 								.from(Obs.class, "obs")
 								.whereEqual("obs.concept", conceptService.getConceptByUuid(HPV_TEST))
 								.and()
 								.whereEqual("obs.valueCode", conceptService.getConceptByUuid(NEGATIVE))
 								.and()
-								.whereLessOrEqualTo("obs.obsDatetime",
-										DateTime.parse(eligForCXCADataSetDefinition.getEndDate().toString())
-												.minusYears(3))
-								.whereEqual("obs.person", person)
-								.whereLessOrEqualTo("obs.obsDatetime",
-										eligForCXCADataSetDefinition.getEndDate()),
+								.whereBetweenInclusive("obs.obsDatetime",
+										eligForCXCADataSetDefinition.getStartDate(),
+										formatDate(eligForCXCADataSetDefinition.getEndDate(),-3))
+								.whereEqual("obs.person", person),
 						Integer.class, evalContext) > 0;
 	}
 
@@ -437,16 +466,17 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 		return evaluationService
 				.evaluateToObject(
 						new HqlQueryBuilder()
+								.select("COUNT(obs)")
 								.from(Obs.class, "obs")
 								.whereEqual("obs.concept", conceptService.getConceptByUuid(VIA_TEST))
 								.and()
 								.whereEqual("obs.valueCode", conceptService.getConceptByUuid(NEGATIVE))
 								.and()
 								.whereLessOrEqualTo("obs.obsDatetime",
-										DateTime.parse(eligForCXCADataSetDefinition.getEndDate().toString())
-												.minusYears(2))
+										formatDate(eligForCXCADataSetDefinition.getEndDate(),-2))
 								.whereEqual("obs.person", person)
-								.whereLessOrEqualTo("obs.obsDatetime",
+								.whereBetweenInclusive("obs.obsDatetime",
+										eligForCXCADataSetDefinition.getStartDate(),
 										eligForCXCADataSetDefinition.getEndDate()),
 						Integer.class, evalContext) > 0;
 	}
@@ -455,7 +485,7 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 		return evaluationService
 				.evaluateToObject(
 						new HqlQueryBuilder()
-								.select("COUNT(obs.*)")
+								.select("COUNT(obs)")
 								.from(Obs.class, "obs")
 								.whereIn("obs.concept", Arrays.asList(
 										conceptService.getConceptByUuid(HPV_TEST),
@@ -463,40 +493,45 @@ public class EligibleForCXCADataSetDefinitionEvaluator implements DataSetEvaluat
 										conceptService.getConceptByUuid(CYTOLOGY_TEST),
 										conceptService.getConceptByUuid(COLPOSCOPY_TEST)))
 								.and()
-								.whereLessOrEqualTo("obs.obsDatetime",
+								.whereBetweenInclusive("obs.obsDatetime",
+										eligForCXCADataSetDefinition.getStartDate(),
 										eligForCXCADataSetDefinition.getEndDate())
 								.whereEqual("obs.person", person),
 						Integer.class, evalContext) > 0;
 	}
 
-	private boolean isArtStarted(Person person) {
-		// TODO: don't forget to add date range filteration
-		return evaluationService
-				.evaluateToObject(
-						new HqlQueryBuilder().select("COUNT(obs.*)")
-								.from(Obs.class, "obs")
-								.whereEqual("obs.concept", artStarted)
-								.and()
-								.whereLessOrEqualTo("obs.valueDatetime",
-										eligForCXCADataSetDefinition.getEndDate())
-								.whereEqual("obs.person", person),
-						Integer.class, evalContext) > 0;
-
-	}
+	
 
 	private List<Person> loadPatients() {
 		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
+		
 		queryBuilder
-		.select("person").from(Person.class, "person")
-				.whereEqual("person.gender", "F")
+				.select("obs.person")
+				.from(Obs.class, "obs")
+				.whereEqual("obs.person.gender", "F")
 				.and()
-				.whereLessOrEqualTo("obs.obsDatetime", eligForCXCADataSetDefinition.getEndDate())
-				.whereLessOrEqualTo("person.birthdate", DateTime.now().minusYears(15));
+				.whereEqual("obs.concept", artStarted)
+				.and()
+				.whereBetweenInclusive("obs.valueDatetime",
+						eligForCXCADataSetDefinition.getStartDate(),
+						eligForCXCADataSetDefinition.getEndDate())
+				.and()
+				.whereLessOrEqualTo("obs.person.birthdate", formatDate(eligForCXCADataSetDefinition.getEndDate(),-15));
 
 		return evaluationService.evaluateToList(queryBuilder, Person.class, evalContext);
 
 	}
 
-
-	
+	private Date formatDate(Date date,int value){
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		calendar.add(Calendar.YEAR, value);
+		return calendar.getTime();
+	}
+	private Date formatDate(Date date,int CalenderType,int value){
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		calendar.add(CalenderType, value);
+		return calendar.getTime();
+	}
 }

@@ -77,8 +77,6 @@ public class TX_New_ReportAdx implements ReportManager {
 		return reportDefinition;
 	}
 	
-	
-	
 	@Override
 	public List<ReportDesign> constructReportDesigns(ReportDefinition reportDefinition) {
 		// ReportDesign design =

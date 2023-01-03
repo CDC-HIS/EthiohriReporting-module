@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class EligibleForCXCADataSetDefinition extends BaseDataSetDefinition {
-		
+	
 	@ConfigurationProperty
 	private Date startDate;
 	
