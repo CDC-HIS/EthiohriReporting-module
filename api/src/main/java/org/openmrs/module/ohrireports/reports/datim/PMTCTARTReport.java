@@ -72,17 +72,19 @@ public class PMTCTARTReport implements ReportManager {
 		    map(tbADataSet, "startDate=${startDateGC},endDate=${endDateGC}"));
 		
 		PMTCTARTDataSetDefinition alreadyOnARTSetDefinition = new PMTCTARTDataSetDefinition();
+		alreadyOnARTSetDefinition.setIsNewOnArt(true);
 		alreadyOnARTSetDefinition.addParameters(getParameters());
 		alreadyOnARTSetDefinition.setEncounterType(followUpEncounter);
 		
-		reportDefinition.addDataSetDefinition("Disaggregated by Regiment Type:",
+		reportDefinition.addDataSetDefinition("Disaggregated by Regiment Type: New On Art",
 		    map(alreadyOnARTSetDefinition, "startDate=${startDateGC},endDate=${endDateGC}"));
 		
 		PMTCTARTDataSetDefinition newlyEnrolledSetDefinition = new PMTCTARTDataSetDefinition();
+		newlyEnrolledSetDefinition.setIsNewOnArt(false);
 		newlyEnrolledSetDefinition.addParameters(getParameters());
 		newlyEnrolledSetDefinition.setEncounterType(followUpEncounter);
 		
-		reportDefinition.addDataSetDefinition("Disaggregated by Regiment Type:",
+		reportDefinition.addDataSetDefinition("Disaggregated by Regiment Type: Already On Art at the beginning of current pregnancy",
 		    map(newlyEnrolledSetDefinition, "startDate=${startDateGC},endDate=${endDateGC}"));
 		
 		return reportDefinition;

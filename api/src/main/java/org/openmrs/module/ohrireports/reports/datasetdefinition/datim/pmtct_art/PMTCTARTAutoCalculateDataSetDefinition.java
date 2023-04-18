@@ -19,6 +19,17 @@ public class PMTCTARTAutoCalculateDataSetDefinition extends BaseDataSetDefinitio
 	@ConfigurationProperty
 	private EncounterType encounterType;
 	
+	@ConfigurationProperty
+	private Boolean isNewOnArt;
+	
+	public Boolean getIsNewOnArt() {
+		return isNewOnArt;
+	}
+	
+	public void setIsNewOnArt(Boolean isNewOnArt) {
+		this.isNewOnArt = isNewOnArt;
+	}
+	
 	public Date getStartDate() {
 		return startDate;
 	}

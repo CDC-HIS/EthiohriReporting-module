@@ -1,12 +1,14 @@
 package org.openmrs.module.ohrireports.reports.datasetevaluator.datim.pmtct_art;
 
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.ART_START_DATE;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.TB_DIAGNOSTIC_TEST_RESULT;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.TREATMENT_END_DATE;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.TB_SCREENING_DATE;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.POSITIVE;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.ALIVE;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.RESTART;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.FOLLOW_UP_STATUS;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.PREGNANT_STATUS;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.YES;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.openmrs.Concept;
@@ -14,7 +16,6 @@ import org.openmrs.Obs;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.ConceptService;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.pmtct_art.PMTCTARTAutoCalculateDataSetDefinition;
-import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.tb_art.TBARTAutoCalculateDataSetDefinition;
 import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.DataSetColumn;
 import org.openmrs.module.reporting.dataset.DataSetRow;
@@ -37,7 +38,7 @@ public class PMTCTARTAutoCalculateDataSetDefinitionEvaluator implements DataSetE
     List<Obs> obses = new ArrayList<>();
     private PMTCTARTAutoCalculateDataSetDefinition hdsd;
 
-    private Concept artConcept, treatmentConcept, tbScreenDateConcept, tbDiagnosticTestResultConcept, positiveConcept;
+    private Concept artConcept, pregnantConcept, yesConcept, followUpStatusConcept, aliveConcept, restartConcept;
 
     @Autowired
     private ConceptService conceptService;
@@ -54,8 +55,8 @@ public class PMTCTARTAutoCalculateDataSetDefinitionEvaluator implements DataSetE
         setRequiredConcepts();
 
         DataSetRow dataSet = new DataSetRow();
-        dataSet.addColumnValue(new DataSetColumn("auto-calculate","Numerator", Integer.class), 
-        getTotalCount());
+        dataSet.addColumnValue(new DataSetColumn("auto-calculate", "Numerator", Integer.class),
+                getTotalCount());
         SimpleDataSet set = new SimpleDataSet(dataSetDefinition, evalContext);
         set.addRow(dataSet);
         return set;
@@ -63,10 +64,11 @@ public class PMTCTARTAutoCalculateDataSetDefinitionEvaluator implements DataSetE
 
     private void setRequiredConcepts() {
         artConcept = conceptService.getConceptByUuid(ART_START_DATE);
-        treatmentConcept = conceptService.getConceptByUuid(TREATMENT_END_DATE);
-        tbScreenDateConcept = conceptService.getConceptByUuid(TB_SCREENING_DATE);
-        tbDiagnosticTestResultConcept = conceptService.getConceptByUuid(TB_DIAGNOSTIC_TEST_RESULT);
-        positiveConcept = conceptService.getConceptByUuid(POSITIVE);
+        pregnantConcept = conceptService.getConceptByUuid(PREGNANT_STATUS);
+        yesConcept = conceptService.getConceptByUuid(YES);
+        followUpStatusConcept = conceptService.getConceptByUuid(FOLLOW_UP_STATUS);
+        aliveConcept = conceptService.getConceptByUuid(ALIVE);
+        restartConcept = conceptService.getConceptByUuid(RESTART);
     }
 
     private void setObservations() {
@@ -77,9 +79,9 @@ public class PMTCTARTAutoCalculateDataSetDefinitionEvaluator implements DataSetE
                 .whereEqual("obs.person.gender", "F")
                 .whereEqual("obs.concept", artConcept)
                 .and()
-                .whereBetweenInclusive("obs.valueDatetime", hdsd.getStartDate(), hdsd.getEndDate())
+                .whereLess("obs.valueDatetime", hdsd.getStartDate())
                 .and()
-                .whereIdIn("obs.personId", getPatientsWithTB());
+                .whereIdIn("obs.personId", getPregnantPatients());
 
         obses = evaluationService.evaluateToList(queryBuilder, Obs.class, context);
 
@@ -97,22 +99,36 @@ public class PMTCTARTAutoCalculateDataSetDefinitionEvaluator implements DataSetE
         return personIds.size();
     }
 
-    private List<Integer> getOnTreatmentPatients() {
+    private List<Integer> getAlivePatientsOnFollowUp() {
         HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-        queryBuilder.select("distinct obs.personId").from(Obs.class, "obs")
+        queryBuilder.select("obs").from(Obs.class, "obs")
                 .whereEqual("obs.encounter.encounterType", hdsd.getEncounterType()).and()
-                .whereEqual("obs.concept", treatmentConcept).and()
-                .whereGreater("obs.valueDatetime", hdsd.getStartDate());
-        return evaluationService.evaluateToList(queryBuilder, Integer.class, context);
+                .whereEqual("obs.person.gender", "F")
+                .and()
+                .whereEqual("obs.concept", followUpStatusConcept)
+                .and()
+                .whereIn("obs.valueCoded",
+                        Arrays.asList(conceptService.getConceptByUuid(ALIVE), conceptService.getConceptByUuid(RESTART)))
+                .and()
+                .orderDesc("obs.obsDatetime");
+        List<Obs> obsList = evaluationService.evaluateToList(queryBuilder, Obs.class, context);
+        List<Integer>personId= new ArrayList<>();
+        for (Obs obs : obsList) {
+            if(!personId.contains(obs.getPersonId()))
+            personId.add(obs.getPersonId());
+        }
+        return personId;
     }
 
-    private List<Integer> getPatientsWithTB() {
+    private List<Integer> getPregnantPatients() {
         HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
         queryBuilder.select("distinct obs.personId").from(Obs.class, "obs")
+                .whereEqual("obs.person.gender", "F")
+                .and()
                 .whereEqual("obs.encounter.encounterType", hdsd.getEncounterType())
-                .and().whereEqual("obs.concept", tbDiagnosticTestResultConcept).and()
-                .whereEqual("obs.valueCoded", positiveConcept)
-                .and().whereIdIn("obs.personId", getOnTreatmentPatients());
+                .and().whereEqual("obs.concept", pregnantConcept).and()
+                .whereEqual("obs.valueCoded", yesConcept)
+                .and().whereIdIn("obs.personId", getAlivePatientsOnFollowUp());
         return evaluationService.evaluateToList(queryBuilder, Integer.class, context);
 
     }
