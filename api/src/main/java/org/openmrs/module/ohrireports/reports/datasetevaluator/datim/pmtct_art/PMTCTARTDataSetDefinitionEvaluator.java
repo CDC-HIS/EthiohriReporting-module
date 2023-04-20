@@ -11,14 +11,13 @@ import static org.openmrs.module.ohrireports.OHRIReportsConstants.RESTART;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.FOLLOW_UP_STATUS;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.PREGNANT_STATUS;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.YES;
-
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.TREATMENT_END_DATE;
 
 import org.openmrs.Concept;
 import org.openmrs.Obs;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.ConceptService;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.pmtct_art.PMTCTARTDataSetDefinition;
-import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.tb_art.TBARTDataSetDefinition;
 import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.DataSetColumn;
 import org.openmrs.module.reporting.dataset.DataSetRow;
@@ -41,7 +40,7 @@ public class PMTCTARTDataSetDefinitionEvaluator implements DataSetEvaluator {
     List<Obs> obses = new ArrayList<>();
     private PMTCTARTDataSetDefinition hdsd;
 
-    private Concept artConcept, pregnantConcept, yesConcept, followUpStatusConcept, aliveConcept, restartConcept;
+    private Concept artConcept, pregnantConcept, yesConcept,treatmentEndDateConcept, followUpStatusConcept, aliveConcept, restartConcept;
 
     @Autowired
     private ConceptService conceptService;
@@ -169,6 +168,7 @@ public class PMTCTARTDataSetDefinitionEvaluator implements DataSetEvaluator {
         followUpStatusConcept = conceptService.getConceptByUuid(FOLLOW_UP_STATUS);
         aliveConcept = conceptService.getConceptByUuid(ALIVE);
         restartConcept = conceptService.getConceptByUuid(RESTART);
+        treatmentEndDateConcept = conceptService.getConceptByUuid(TREATMENT_END_DATE);
     }
 
     private void setObservations() {
@@ -202,17 +202,29 @@ public class PMTCTARTDataSetDefinitionEvaluator implements DataSetEvaluator {
                 .whereEqual("obs.concept", followUpStatusConcept)
                 .and()
                 .whereIn("obs.valueCoded",
-                        Arrays.asList(aliveConcept, 
-                        restartConcept))
+                        Arrays.asList(aliveConcept,
+                                restartConcept))
                 .and()
                 .orderDesc("obs.obsDatetime");
         List<Obs> obsList = evaluationService.evaluateToList(queryBuilder, Obs.class, context);
-        List<Integer>personId= new ArrayList<>();
+        List<Integer> personId = new ArrayList<>();
         for (Obs obs : obsList) {
-            if(!personId.contains(obs.getPersonId()))
-            personId.add(obs.getPersonId());
+            if (!personId.contains(obs.getPersonId()))
+                personId.add(obs.getPersonId());
         }
         return personId;
+    }
+
+    private List<Integer> getPatientsWithValidDoseEndDate() {
+        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
+        queryBuilder.select("distinct obs.personId").from(Obs.class, "obs")
+                .whereEqual("obs.person.gender", "F")
+                .and()
+                .whereEqual("obs.encounter.encounterType", hdsd.getEncounterType())
+                .and().whereEqual("obs.concept", treatmentEndDateConcept).and()
+                .whereGreater("obs.valueDatetime", hdsd.getEndDate())
+                .and().whereIdIn("obs.personId", getAlivePatientsOnFollowUp());
+        return evaluationService.evaluateToList(queryBuilder, Integer.class, context);
     }
 
     private List<Integer> getPregnantPatients() {
@@ -223,7 +235,7 @@ public class PMTCTARTDataSetDefinitionEvaluator implements DataSetEvaluator {
                 .whereEqual("obs.encounter.encounterType", hdsd.getEncounterType())
                 .and().whereEqual("obs.concept", pregnantConcept).and()
                 .whereEqual("obs.valueCoded", yesConcept)
-                .and().whereIdIn("obs.personId", getAlivePatientsOnFollowUp());
+                .and().whereIdIn("obs.personId", getPatientsWithValidDoseEndDate());
         return evaluationService.evaluateToList(queryBuilder, Integer.class, context);
 
     }

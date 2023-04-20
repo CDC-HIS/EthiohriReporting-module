@@ -84,7 +84,8 @@ public class PMTCTARTReport implements ReportManager {
 		newlyEnrolledSetDefinition.addParameters(getParameters());
 		newlyEnrolledSetDefinition.setEncounterType(followUpEncounter);
 		
-		reportDefinition.addDataSetDefinition("Disaggregated by Regiment Type: Already On Art at the beginning of current pregnancy",
+		reportDefinition.addDataSetDefinition(
+		    "Disaggregated by Regiment Type: Already On Art at the beginning of current pregnancy",
 		    map(newlyEnrolledSetDefinition, "startDate=${startDateGC},endDate=${endDateGC}"));
 		
 		return reportDefinition;

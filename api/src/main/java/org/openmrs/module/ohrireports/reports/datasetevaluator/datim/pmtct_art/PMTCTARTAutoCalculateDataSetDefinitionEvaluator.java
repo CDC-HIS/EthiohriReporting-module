@@ -6,6 +6,7 @@ import static org.openmrs.module.ohrireports.OHRIReportsConstants.RESTART;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.FOLLOW_UP_STATUS;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.PREGNANT_STATUS;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.YES;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.TREATMENT_END_DATE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +39,7 @@ public class PMTCTARTAutoCalculateDataSetDefinitionEvaluator implements DataSetE
     List<Obs> obses = new ArrayList<>();
     private PMTCTARTAutoCalculateDataSetDefinition hdsd;
 
-    private Concept artConcept, pregnantConcept, yesConcept, followUpStatusConcept, aliveConcept, restartConcept;
+    private Concept artConcept, pregnantConcept, yesConcept, followUpStatusConcept, treatmentEndDateConcept,aliveConcept, restartConcept;
 
     @Autowired
     private ConceptService conceptService;
@@ -69,6 +70,7 @@ public class PMTCTARTAutoCalculateDataSetDefinitionEvaluator implements DataSetE
         followUpStatusConcept = conceptService.getConceptByUuid(FOLLOW_UP_STATUS);
         aliveConcept = conceptService.getConceptByUuid(ALIVE);
         restartConcept = conceptService.getConceptByUuid(RESTART);
+        treatmentEndDateConcept = conceptService.getConceptByUuid(TREATMENT_END_DATE);
     }
 
     private void setObservations() {
@@ -97,6 +99,18 @@ public class PMTCTARTAutoCalculateDataSetDefinitionEvaluator implements DataSetE
 
         }
         return personIds.size();
+    }
+
+    private List<Integer> getPatientsWithValidDoseEndDate() {
+        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
+        queryBuilder.select("distinct obs.personId").from(Obs.class, "obs")
+                .whereEqual("obs.person.gender", "F")
+                .and()
+                .whereEqual("obs.encounter.encounterType", hdsd.getEncounterType())
+                .and().whereEqual("obs.concept", treatmentEndDateConcept).and()
+                .whereGreater("obs.valueDatetime", hdsd.getEndDate())
+                .and().whereIdIn("obs.personId", getAlivePatientsOnFollowUp());
+        return evaluationService.evaluateToList(queryBuilder, Integer.class, context);
     }
 
     private List<Integer> getAlivePatientsOnFollowUp() {
@@ -128,7 +142,7 @@ public class PMTCTARTAutoCalculateDataSetDefinitionEvaluator implements DataSetE
                 .whereEqual("obs.encounter.encounterType", hdsd.getEncounterType())
                 .and().whereEqual("obs.concept", pregnantConcept).and()
                 .whereEqual("obs.valueCoded", yesConcept)
-                .and().whereIdIn("obs.personId", getAlivePatientsOnFollowUp());
+                .and().whereIdIn("obs.personId", getPatientsWithValidDoseEndDate());
         return evaluationService.evaluateToList(queryBuilder, Integer.class, context);
 
     }

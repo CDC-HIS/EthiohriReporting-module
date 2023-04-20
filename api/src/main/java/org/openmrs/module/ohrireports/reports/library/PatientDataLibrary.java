@@ -9,6 +9,7 @@
  */
 package org.openmrs.module.ohrireports.reports.library;
 
+import org.openmrs.module.appointments.model.Appointment;
 import org.openmrs.module.reporting.cohort.definition.AgeCohortDefinition;
 import org.openmrs.module.reporting.cohort.definition.CohortDefinition;
 import org.openmrs.module.reporting.cohort.definition.CompositionCohortDefinition;
@@ -31,6 +32,7 @@ public class PatientDataLibrary extends BaseDefinitionLibrary<PatientDataDefinit
 	
 	@Override
 	public String getKeyPrefix() {
+		
 		return "ohri.patientData.hts.";
 	}
 	

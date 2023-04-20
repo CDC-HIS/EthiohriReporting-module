@@ -35,11 +35,11 @@ public class TXCurrDataSetDefinitionEvaluatorAdx implements DataSetEvaluator {
 	@Autowired
 	ConceptService conceptService;
 
+
 	HashMap<Integer, Concept> patientStatus = new HashMap<>();
 	List<Obs> obses = new ArrayList<>(); 
 	private TXCurrDataSetDefinitionAdx hdsd;
 	private EvaluationContext context;
-
 	@Override
 	public DataSet evaluate(DataSetDefinition dataSetDefinition, EvaluationContext evalContext)
 			throws EvaluationException {
@@ -48,7 +48,7 @@ public class TXCurrDataSetDefinitionEvaluatorAdx implements DataSetEvaluator {
 		context = evalContext;
 		
 		MapDataSet data = new MapDataSet(dataSetDefinition, evalContext);
-		
+
 		obses = getTxCurrPatients();
 		
 		data.addData(new DataSetColumn("1_famale","<1,  Female, on Treatment",Integer.class)
