@@ -2715,6 +2715,7 @@ DATETIME) BEGIN
 	FROM mamba_fact_tx_curr txc
 	    INNER JOIN mamba_dim_follow_up_client as mp
 		on txc.client_id = mp.client_id
+		and txc.treatment_end_date is NOT null
 	WHERE
 	    txc.treatment_end_date >= art_end_date;
 	END // 
