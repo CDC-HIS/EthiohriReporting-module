@@ -10,7 +10,7 @@
 	</parent>
 
 	<groupId>org.openmrs.module</groupId>
-	<artifactId>ethiohri-reports</artifactId>
+	<artifactId>ethiohri-reporting</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 

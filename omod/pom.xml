@@ -4,11 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.openmrs.module</groupId>
-		<artifactId>ethiohri-reports</artifactId>
+		<artifactId>ethiohri-reporting</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>ethiohri-reports-omod</artifactId>
+	<artifactId>ethiohri-reporting-omod</artifactId>
 	<packaging>jar</packaging>
 	<name>EthiOHRI Reports OMOD</name>
 	<description>Omod submodule for EthiOHRI Reports</description>
@@ -16,7 +16,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
-			<artifactId>ethiohri-reports-api</artifactId>
+			<artifactId>ethiohri-reporting-api</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
