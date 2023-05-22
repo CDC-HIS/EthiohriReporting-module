@@ -8,8 +8,8 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.htmlwidgets.web.WidgetConfig;
 
 public class EthiopiaDateWidget implements Widget {
-
-	/** 
+	
+	/**
 	 * @see Widget#render(WidgetConfig)
 	 */
 	public void render(WidgetConfig config, Writer w) throws IOException {
