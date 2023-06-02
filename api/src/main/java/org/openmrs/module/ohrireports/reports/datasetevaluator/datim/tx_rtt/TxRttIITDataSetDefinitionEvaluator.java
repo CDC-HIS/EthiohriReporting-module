@@ -134,7 +134,7 @@ public class TxRttIITDataSetDefinitionEvaluator implements DataSetEvaluator {
         .and()
         .whereEqual("obs.concept", conceptService.getConceptByUuid(TREATMENT_END_DATE))
         .and()
-        .whereGreater("obs.obsDatetime", hdsd.getStartDate())
+        .whereGreaterOrEqualTo("obs.obsDatetime", hdsd.getStartDate())
         .and().whereLessOrEqualTo("obs.obsDatetime", hdsd.getEndDate()).and()
 		.whereIdIn("obs.personId", prevPatientsTreatmentEnd)     
         .orderDesc("obs.personId,obs.obsDatetime");

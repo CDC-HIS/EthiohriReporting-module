@@ -63,7 +63,7 @@ public class TxRttAutoCalculateDataSetDefinitionEvaluator implements DataSetEval
 		// .and()
         // .whereGreater("obs.valueDatetime", hdsd.getEndDate())
         .and()
-        .whereGreater("obs.obsDatetime", hdsd.getStartDate())
+        .whereGreaterOrEqualTo("obs.obsDatetime", hdsd.getStartDate())
         .and()
 		.whereLessOrEqualTo("obs.obsDatetime", hdsd.getEndDate()).and()
 		.whereIdIn("obs.personId", prevPatientsTreatmentEnd)
