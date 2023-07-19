@@ -27,103 +27,113 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Handler(supports = { TbPrevNumeratorAutoCalculateDataSetDefinition.class })
 public class TbPrevNumeratorAutoCalculateDataSetDefinitionEvaluator implements DataSetEvaluator {
-	
+
 	private EvaluationContext context;
-	
+
 	private TbPrevNumeratorAutoCalculateDataSetDefinition hdsd;
-	
+
 	// HashMap<Integer, Concept> patientStatus = new HashMap<>();
-	
+
 	Date prevSixMonth = new Date();
-	
+
 	@Autowired
 	private ConceptService conceptService;
-	
+
 	@Autowired
 	private EvaluationService evaluationService;
-	
+
 	@Override
-	public DataSet evaluate(DataSetDefinition dataSetDefinition, EvaluationContext evalContext) throws EvaluationException {
-		
+	public DataSet evaluate(DataSetDefinition dataSetDefinition, EvaluationContext evalContext)
+			throws EvaluationException {
+
 		hdsd = (TbPrevNumeratorAutoCalculateDataSetDefinition) dataSetDefinition;
 		context = evalContext;
 		Calendar subSixMonth = Calendar.getInstance();
 		subSixMonth.setTime(hdsd.getStartDate());
-		subSixMonth.add(Calendar.MONTH, -6);
+		subSixMonth.add(Calendar.MONTH, -7);
 		prevSixMonth = subSixMonth.getTime();
 		DataSetRow dataSet = new DataSetRow();
 		dataSet.addColumnValue(new DataSetColumn("TPTPREVEnrolled", "Numerator", Integer.class),
-		    getTPTreatmentEndDateInLastSixMonths());
+				getTPTreatmentEndDateInLastSixMonths());
 		SimpleDataSet set = new SimpleDataSet(dataSetDefinition, evalContext);
 		set.addRow(dataSet);
 		return set;
 	}
-	
-	public int getTPTreatmentEndDateInLastSixMonths(){
+
+	public int getTPTreatmentEndDateInLastSixMonths() {
 		List<Integer> tbstarted = new ArrayList<>();
 		List<Obs> obstbstarted = new ArrayList<>();
 		List<Integer> tptstarteddate = getTPTreatmentStartedDateInLastSixMonths();
-		if (tptstarteddate == null || tptstarteddate.size()==0){
+		if (tptstarteddate == null || tptstarteddate.size() == 0) {
 			return tbstarted.size();
 		}
 		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-		queryBuilder.select("obs").from(Obs.class,"obs").whereEqual("obs.concept", conceptService.getConceptByUuid(TPT_COMPLETED_DATE)).and().whereGreater("obs.valueDatetime", prevSixMonth).and().whereLess("obs.valueDatetime",hdsd.getStartDate()).and().whereIdIn("obs.personId", tptstarteddate).orderDesc("obs.personId, obs.obsDatetime");
-		obstbstarted=evaluationService.evaluateToList(queryBuilder,Obs.class,context);
-		for (Obs obs:obstbstarted){
-			if (!tbstarted.contains(obs.getPersonId())){
+		queryBuilder.select("obs").from(Obs.class, "obs")
+				.whereEqual("obs.concept", conceptService.getConceptByUuid(TPT_COMPLETED_DATE))
+				.and()
+				.whereLess("obs.valueDatetime", hdsd.getEndDate())
+				.and()
+				.whereIdIn("obs.personId", tptstarteddate)
+				.orderDesc("obs.personId, obs.obsDatetime");
+		obstbstarted = evaluationService.evaluateToList(queryBuilder, Obs.class, context);
+		for (Obs obs : obstbstarted) {
+			if (!tbstarted.contains(obs.getPersonId())) {
 				tbstarted.add(obs.getPersonId());
 			}
 		}
 		return tbstarted.size();
 	}
-	
-	public List<Integer> getTPTreatmentStartedDateInLastSixMonths(){
+
+	public List<Integer> getTPTreatmentStartedDateInLastSixMonths() {
 		List<Integer> tbstarted = new ArrayList<>();
 		List<Obs> obstbstarted = new ArrayList<>();
 		List<Integer> dispense = getDatimValidTreatmentEndDatePatients();
-		if (dispense == null || dispense.size()==0){
+		if (dispense == null || dispense.size() == 0) {
 			return tbstarted;
 		}
 		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-		queryBuilder.select("obs").from(Obs.class,"obs").whereEqual("obs.concept", conceptService.getConceptByUuid(TPT_START_DATE)).and().whereGreater("obs.valueDatetime", prevSixMonth).and().whereLess("obs.valueDatetime",hdsd.getStartDate()).and().whereIdIn("obs.personId", dispense).orderDesc("obs.personId, obs.obsDatetime");
-		obstbstarted=evaluationService.evaluateToList(queryBuilder,Obs.class,context);
-		for (Obs obs:obstbstarted){
-			if (!tbstarted.contains(obs.getPersonId())){
+		queryBuilder.select("obs").from(Obs.class, "obs")
+				.whereEqual("obs.concept", conceptService.getConceptByUuid(TPT_START_DATE))
+				.and()
+				.whereLess("obs.valueDatetime", hdsd.getEndDate())
+				.and().whereIdIn("obs.personId", dispense)
+				.orderDesc("obs.personId, obs.obsDatetime");
+		obstbstarted = evaluationService.evaluateToList(queryBuilder, Obs.class, context);
+		for (Obs obs : obstbstarted) {
+			if (!tbstarted.contains(obs.getPersonId())) {
 				tbstarted.add(obs.getPersonId());
 			}
 		}
 		return tbstarted;
 	}
-	
+
 	private List<Integer> getDatimValidTreatmentEndDatePatients() {
 
 		List<Integer> patientsId = getListOfALiveORRestartPatientObservertions();
 		List<Integer> patients = new ArrayList<>();
-        if (patientsId == null || patientsId.size() == 0)
-                return patients;
-        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-        queryBuilder.select("obs");
-        queryBuilder.from(Obs.class, "obs")
-        .whereEqual("obs.encounter.encounterType", hdsd.getEncounterType())
-        .and()
-        .whereEqual("obs.concept", conceptService.getConceptByUuid(TREATMENT_END_DATE))
-        .and()
-        .whereGreater("obs.valueDatetime", prevSixMonth)
-        .and()
-        .whereLess("obs.obsDatetime", hdsd.getStartDate())
-        .whereIdIn("obs.personId", patientsId)
-        .orderDesc("obs.personId,obs.obsDatetime");
-        for (Obs obs : evaluationService.evaluateToList(queryBuilder, Obs.class, context)) {
-                if(!patients.contains(obs.getPersonId()))
-                        {
-                        patients.add(obs.getPersonId());
-                        }
-        }
-		// patients = evaluationService.evaluateToList(queryBuilder, Integer.class, context);
-				
+		if (patientsId == null || patientsId.size() == 0)
+			return patients;
+		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
+		queryBuilder.select("obs");
+		queryBuilder.from(Obs.class, "obs")
+				.whereEqual("obs.encounter.encounterType", hdsd.getEncounterType())
+				.and()
+				.whereEqual("obs.concept", conceptService.getConceptByUuid(TREATMENT_END_DATE))
+				.and()
+				.whereGreater("obs.valueDatetime", hdsd.getEndDate())
+				.whereIdIn("obs.personId", patientsId)
+				.orderDesc("obs.personId,obs.obsDatetime");
+		for (Obs obs : evaluationService.evaluateToList(queryBuilder, Obs.class, context)) {
+			if (!patients.contains(obs.getPersonId())) {
+				patients.add(obs.getPersonId());
+			}
+		}
+		// patients = evaluationService.evaluateToList(queryBuilder, Integer.class,
+		// context);
+
 		return patients;
 	}
-	
+
 	private List<Integer> getListOfALiveORRestartPatientObservertions() {
 
 		List<Integer> uniqiObs = new ArrayList<>();
@@ -135,8 +145,9 @@ public class TbPrevNumeratorAutoCalculateDataSetDefinitionEvaluator implements D
 				.and()
 				.whereEqual("obs.concept", conceptService.getConceptByUuid(PATIENT_STATUS))
 				.and()
-				.whereIn("obs.valueCoded", Arrays.asList(conceptService.getConceptByUuid(ALIVE),conceptService.getConceptByUuid(RESTART)))
-				.and().whereLess("obs.obsDatetime", hdsd.getStartDate());
+				.whereIn("obs.valueCoded",
+						Arrays.asList(conceptService.getConceptByUuid(ALIVE), conceptService.getConceptByUuid(RESTART)))
+				.and().whereLess("obs.obsDatetime", hdsd.getEndDate());
 		queryBuilder.orderDesc("obs.personId,obs.obsDatetime");
 
 		List<Obs> liveObs = evaluationService.evaluateToList(queryBuilder, Obs.class, context);

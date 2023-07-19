@@ -157,8 +157,17 @@ public class TbPrevNumeratorARTByAgeAndSexDataSetDefinitionEvaluator implements 
 			return obsARTstarted;
 		}
 		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-		queryBuilder.select("obs").from(Obs.class,"obs").whereEqual("obs.concept", conceptService.getConceptByUuid(ART_START_DATE)).and().whereGreater("obs.valueDatetime", prevSixMonth).and().whereLess("obs.valueDatetime", hdsd.getStartDate()).and()
-		.whereEqual("obs.person.gender", gender).and().whereIdIn("obs.personId", tbstarted).orderDesc("obs.personId, obs.obsDatetime");
+		queryBuilder.select("obs").from(Obs.class,"obs")
+		.whereEqual("obs.concept", conceptService.getConceptByUuid(ART_START_DATE))
+		.and()
+		.whereGreater("obs.valueDatetime", prevSixMonth)
+		.and()
+		.whereLess("obs.valueDatetime", hdsd.getStartDate())
+		.and()
+		.whereEqual("obs.person.gender", gender)
+		.and()
+		.whereIdIn("obs.personId", tbstarted)
+		.orderDesc("obs.personId, obs.obsDatetime");
 		for (Obs obs: evaluationService.evaluateToList(queryBuilder, Obs.class, context)){
 				if (!artstarted.contains(obs.getPersonId())){
 					artstarted.add(obs.getPersonId());
@@ -177,7 +186,11 @@ public class TbPrevNumeratorARTByAgeAndSexDataSetDefinitionEvaluator implements 
 			return tbstarted;
 		}
 		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-		queryBuilder.select("obs").from(Obs.class,"obs").whereEqual("obs.concept", conceptService.getConceptByUuid(TPT_COMPLETED_DATE)).and().whereGreater("obs.valueDatetime", prevSixMonth).and().whereLess("obs.valueDatetime",hdsd.getStartDate()).and().whereIdIn("obs.personId", tptstarteddate).orderDesc("obs.personId, obs.obsDatetime");
+		queryBuilder.select("obs").from(Obs.class,"obs")
+		.whereEqual("obs.concept", conceptService.getConceptByUuid(TPT_COMPLETED_DATE))
+		.and().whereLess("obs.valueDatetime",hdsd.getEndDate())
+		.and().whereIdIn("obs.personId", tptstarteddate)
+		.orderDesc("obs.personId, obs.obsDatetime");
 		obstbstarted=evaluationService.evaluateToList(queryBuilder,Obs.class,context);
 		for (Obs obs:obstbstarted){
 			if (!tbstarted.contains(obs.getPersonId())){
@@ -196,7 +209,13 @@ public class TbPrevNumeratorARTByAgeAndSexDataSetDefinitionEvaluator implements 
 			return tbstarted;
 		}
 		HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-		queryBuilder.select("obs").from(Obs.class,"obs").whereEqual("obs.concept", conceptService.getConceptByUuid(TPT_START_DATE)).and().whereGreater("obs.valueDatetime", prevSixMonth).and().whereLess("obs.valueDatetime",hdsd.getStartDate()).and().whereIdIn("obs.personId", dispense).orderDesc("obs.personId, obs.obsDatetime");
+		queryBuilder.select("obs").from(Obs.class,"obs")
+		.whereEqual("obs.concept", conceptService.getConceptByUuid(TPT_START_DATE))
+		.and()
+		.whereLess("obs.valueDatetime",hdsd.getEndDate())
+		.and()
+		.whereIdIn("obs.personId", dispense)
+		.orderDesc("obs.personId, obs.obsDatetime");
 		obstbstarted=evaluationService.evaluateToList(queryBuilder,Obs.class,context);
 		for (Obs obs:obstbstarted){
 			if (!tbstarted.contains(obs.getPersonId())){
@@ -219,10 +238,8 @@ public class TbPrevNumeratorARTByAgeAndSexDataSetDefinitionEvaluator implements 
         .whereEqual("obs.encounter.encounterType", hdsd.getEncounterType())
         .and()
         .whereEqual("obs.concept", conceptService.getConceptByUuid(TREATMENT_END_DATE))
-        .and()
-        .whereGreater("obs.valueDatetime", prevSixMonth)
-        .and()
-        .whereLess("obs.obsDatetime", hdsd.getStartDate())
+         .and()
+        .whereGreater("obs.obsDatetime", hdsd.getEndDate())
         .whereIdIn("obs.personId", patientsId)
         .orderDesc("obs.personId,obs.obsDatetime");
         for (Obs obs : evaluationService.evaluateToList(queryBuilder, Obs.class, context)) {
