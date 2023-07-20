@@ -24,7 +24,7 @@ public class HivPrEpQuery extends PatientQueryImpDao {
 	
 	private DbSessionFactory sessionFactory;
 	
-	private Date startDate, endDate;
+	private Date  endDate;
 	
 	@Autowired
 	public HivPrEpQuery(DbSessionFactory sessionFactory) {
@@ -33,7 +33,7 @@ public class HivPrEpQuery extends PatientQueryImpDao {
 	}
 	
 	public void initializeDate(Date start, Date end) {
-		startDate = start;
+
 		endDate = end;
 	}
 	
@@ -41,8 +41,6 @@ public class HivPrEpQuery extends PatientQueryImpDao {
         StringBuilder sql = personIdQuery(getCurrQueryClauses(), "");
 
         Query query = sessionFactory.getCurrentSession().createSQLQuery(sql.toString());
-
-        query.setParameter("startOnOrBefore", startDate);
 
         query.setParameter("endOnOrAfter", endDate);
 
@@ -56,8 +54,6 @@ public class HivPrEpQuery extends PatientQueryImpDao {
         String subQueryClauses = getSubQueryClauses();
         StringBuilder sql = personIdQuery(subQueryClauses, "");
         Query query = sessionFactory.getCurrentSession().createSQLQuery(sql.toString());
-
-        query.setParameter("startOnOrBefore", startDate);
 
         query.setParameter("endOnOrAfter", endDate);
 
