@@ -211,6 +211,8 @@ public class OHRIReportsConstants {
 	/**
 	 * Viral Load Constant
 	 */
+	public final static String REASON_FOR_VL_TEST = "6bb5b796-60bc-406c-abd9-fb9362ed5e80";
+	
 	public final static String HIV_VIRAL_LOAD_COUNT = "856AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	
 	public final static String HIV_ROUTINE_VIRAL_LOAD_COUNT = "9b8cef86-9093-4737-a641-3b8399618c85";

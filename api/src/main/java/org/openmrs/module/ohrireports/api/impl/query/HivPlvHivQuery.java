@@ -1,4 +1,4 @@
-package org.openmrs.module.ohrireports.reports.datasetvaluator.hmis.hiv_plhiv;
+package org.openmrs.module.ohrireports.api.impl.query;
 
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.UNDERNOURISHED;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.THERAPEUTIC_SUPPLEMENTARY_FOOD;

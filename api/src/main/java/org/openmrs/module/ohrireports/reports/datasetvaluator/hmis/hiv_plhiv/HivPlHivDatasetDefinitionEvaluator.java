@@ -5,6 +5,7 @@ import java.util.List;
 import org.openmrs.Cohort;
 import org.openmrs.Person;
 import org.openmrs.annotation.Handler;
+import org.openmrs.module.ohrireports.api.impl.query.HivPlvHivQuery;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.hiv_plhiv.HivPlHivDatasetDefinition;
 import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.SimpleDataSet;

@@ -8,8 +8,8 @@ import java.util.Set;
 
 import org.openmrs.Cohort;
 import org.openmrs.annotation.Handler;
+import org.openmrs.module.ohrireports.api.impl.query.HivPrEpQuery;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.pr_ep_curr.HivPrEpCurrDatasetDefinition;
-import org.openmrs.module.ohrireports.reports.datasetvaluator.hmis.pr_ep.HivPrEpQuery;
 import org.openmrs.module.ohrireports.reports.datasetvaluator.hmis.pr_ep.HmisPrepDatasetBuilder;
 import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.DataSetColumn;

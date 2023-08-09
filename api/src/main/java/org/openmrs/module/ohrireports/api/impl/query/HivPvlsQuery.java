@@ -1,11 +1,15 @@
-package org.openmrs.module.ohrireports.reports.datasetvaluator.hmis.hiv_pvls;
+package org.openmrs.module.ohrireports.api.impl.query;
 
 import java.util.Calendar;
 import java.util.Date;
+
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_VIRAL_LOAD_STATUS;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_VIRAL_LOAD_SUPPRESSED;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_VIRAL_LOAD_COUNT;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_VIRAL_LOAD_LOW_LEVEL_VIREMIA;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_ROUTINE_VIRAL_LOAD_COUNT;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_TARGET_VIRAL_LOAD_COUNT;
+import static org.openmrs.module.ohrireports.OHRIReportsConstants.REASON_FOR_VL_TEST;
 
 import org.hibernate.Query;
 import org.openmrs.Cohort;
@@ -27,7 +31,7 @@ public class HivPvlsQuery extends PatientQueryImpDao {
 	
 	/*
 	 * -11 is because calendar library start count month from zero,
-	 *  the idea is to check all record from past twelve months
+	 * the idea is to check all record from past twelve months
 	 */
 	private int STARTING_FROM_MONTHS = -11;
 	
@@ -103,6 +107,28 @@ public class HivPvlsQuery extends PatientQueryImpDao {
 		sql.append("and p.person_id in (:artCohorts) ");
 		Query query = addDateRange(sql);
 		query.setParameter("artCohorts", artCohort.getMemberIds());
+		
+		return new Cohort(query.list());
+	}
+	
+	public Cohort getPatientVLByTestReason(String gender, Date startOnOrAfter, Date endOnOrBefore, Boolean isRoute,
+	        Cohort testedVLCohort) {
+		setDate(startOnOrAfter, endOnOrBefore);
+		if (testedVLCohort == null || testedVLCohort.size() <= 0)
+			return new Cohort();
+		
+		StringBuilder sql = super.baseQuery(REASON_FOR_VL_TEST);
+		if (gender != null && !gender.isEmpty()) {
+			sql.append("and p.gender='" + gender + "' ");
+		}
+		
+		sql.append("and " + OBS_ALIAS + "value_coded = '"
+		        + conceptQuery(isRoute ? HIV_ROUTINE_VIRAL_LOAD_COUNT : HIV_TARGET_VIRAL_LOAD_COUNT) + "'");
+		
+		sql.append("and p.person_id in (:testedPatients) ");
+		Query query = addDateRange(sql);
+		
+		query.setParameter("testedPatients", testedVLCohort.getMemberIds());
 		
 		return new Cohort(query.list());
 	}

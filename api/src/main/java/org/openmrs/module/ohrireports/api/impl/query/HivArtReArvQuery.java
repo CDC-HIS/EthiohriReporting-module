@@ -1,4 +1,4 @@
-package org.openmrs.module.ohrireports.reports.datasetvaluator.hmis.hiv_art_re_arv;
+package org.openmrs.module.ohrireports.api.impl.query;
 
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.FOLLOW_UP_STATUS;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.RESTART;

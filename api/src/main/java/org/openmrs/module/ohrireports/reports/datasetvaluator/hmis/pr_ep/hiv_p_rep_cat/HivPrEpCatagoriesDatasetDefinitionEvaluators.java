@@ -8,8 +8,8 @@ import static org.openmrs.module.ohrireports.reports.datasetvaluator.hmis.HMISCo
 import static org.openmrs.module.ohrireports.reports.datasetvaluator.hmis.HMISConstant.COLUMN_2_NAME;
 
 import org.openmrs.annotation.Handler;
+import org.openmrs.module.ohrireports.api.impl.query.HivPrEpQuery;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.hiv_p_r_ep_cat.HivPrEpCatagoriesDatasetDefinition;
-import org.openmrs.module.ohrireports.reports.datasetvaluator.hmis.pr_ep.HivPrEpQuery;
 import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.DataSetColumn;
 import org.openmrs.module.reporting.dataset.DataSetRow;

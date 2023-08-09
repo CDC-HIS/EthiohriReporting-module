@@ -1,4 +1,4 @@
-package org.openmrs.module.ohrireports.reports.datasetvaluator.hmis.pr_ep;
+package org.openmrs.module.ohrireports.api.impl.query;
 
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.PR_EP_STARTED;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.TDF_TENOFOVIR_DRUG;

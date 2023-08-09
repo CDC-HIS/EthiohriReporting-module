@@ -14,6 +14,7 @@ import org.openmrs.Cohort;
 import org.openmrs.CohortMembership;
 import org.openmrs.Person;
 import org.openmrs.annotation.Handler;
+import org.openmrs.module.ohrireports.api.impl.query.HivPvlsQuery;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.hiv_pvls.HivPvlsDatasetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.hiv_pvls.HivPvlsType;
 import org.openmrs.module.reporting.dataset.DataSet;

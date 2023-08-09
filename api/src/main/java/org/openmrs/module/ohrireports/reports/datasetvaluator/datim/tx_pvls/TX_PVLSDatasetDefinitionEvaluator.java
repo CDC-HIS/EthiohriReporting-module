@@ -1,26 +1,15 @@
 package org.openmrs.module.ohrireports.reports.datasetvaluator.datim.tx_pvls;
 
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_VIRAL_LOAD_STATUS;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.ART_START_DATE;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.FOLLOW_UP_STATUS;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_VIRAL_LOAD_SUPPRESSED;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_VIRAL_LOAD_UNSUPPRESSED;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_ROUTINE_VIRAL_LOAD_COUNT;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.HIV_TARGET_VIRAL_LOAD_COUNT;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.ALIVE;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.RESTART;
-
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
-import org.joda.time.LocalDate;
-import org.joda.time.Months;
-import org.openmrs.Concept;
-import org.openmrs.Obs;
+import org.openmrs.Cohort;
+import org.openmrs.Person;
 import org.openmrs.annotation.Handler;
-import org.openmrs.api.ConceptService;
+import org.openmrs.module.ohrireports.api.impl.query.HivPvlsQuery;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.tx_pvls.TX_PVLSDatasetDefinition;
 import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.DataSetColumn;
@@ -30,224 +19,114 @@ import org.openmrs.module.reporting.dataset.definition.DataSetDefinition;
 import org.openmrs.module.reporting.dataset.definition.evaluator.DataSetEvaluator;
 import org.openmrs.module.reporting.evaluation.EvaluationContext;
 import org.openmrs.module.reporting.evaluation.EvaluationException;
-import org.openmrs.module.reporting.evaluation.querybuilder.HqlQueryBuilder;
-import org.openmrs.module.reporting.evaluation.service.EvaluationService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Handler(supports = { TX_PVLSDatasetDefinition.class })
 public class TX_PVLSDatasetDefinitionEvaluator implements DataSetEvaluator {
-    @Autowired
-    private ConceptService conceptService;
-    @Autowired
-    private EvaluationService evaluationService;
 
-    private EvaluationContext context;
+
+
     private TX_PVLSDatasetDefinition txDatasetDefinition;
     private int minCount = 0;
     private int maxCount = 4;
     private int total = 0;
     private String routineDesc = "ROUTINE: Disaggregated by Age / Sex / Testing Indication (Fine Disaggregated). Must complete finer disaggregated unless permitted by program";
     private String targetDesc = "Targeted: Disaggregated by Age / Sex / Testing Indication (Fine Disaggregated). Must complete finer disaggregated unless permitted by program";
-    List<Obs> obses = new ArrayList<>();
-    List<Integer> countedPatientId = new ArrayList<>();
-    List<Integer> patientIdList = new ArrayList<>();
-    private Concept artConcept,
-            hivViralLoadStatusConcept,
-            hivViralLoadSuppressedConcept,
-            hivViralLoadUnSuppressedConcept,
-            aliveConcept,
-            restartConcept,
-            routineViralLoadConcept,
-            targetViralLoadConcept,
-            followUpStatusConcept;
 
-    private static final int _VALID_MONTHS_OF_VIRAL_LOAD_TEST = 12;
-    private LocalDate startDate;
-    private int months;
+    List<Integer> countedPatientId = new ArrayList<>();
+    Set<Integer> patientIdList = new HashSet<>();
+    List<Person> personList = new ArrayList<>();
+
+    @Autowired
+    private HivPvlsQuery qHivPvlsQuery;
 
     @Override
     public DataSet evaluate(DataSetDefinition dataSetDefinition, EvaluationContext evalContext)
             throws EvaluationException {
-        context = evalContext;
+
         txDatasetDefinition = (TX_PVLSDatasetDefinition) dataSetDefinition;
 
-        loadConcepts();
-         patientIdList = txDatasetDefinition.getIncludeUnSuppressed() ? getAllPatientWithViralLoudCount()
-                : getSuppressedPatientList();
+        patientIdList = txDatasetDefinition.getIncludeUnSuppressed() ? getAllPatientWithViralLoadCount()
+                : getAllPatientListWithSuppressedViral();
         countedPatientId.clear();
+       
         SimpleDataSet dataSet = new SimpleDataSet(dataSetDefinition, evalContext);
+       
         DataSetRow routineDataSetRow = new DataSetRow();
+       
         routineDataSetRow.addColumnValue(new DataSetColumn("label", "", String.class), routineDesc);
         dataSet.addRow(routineDataSetRow);
-        buildDataSet(dataSet, routineViralLoadConcept);
+       
+        buildDataSet(dataSet, true);
+
+        countedPatientId.clear();
 
         DataSetRow targetDataSetRow = new DataSetRow();
+      
         targetDataSetRow.addColumnValue(new DataSetColumn("label", "", String.class), targetDesc);
         dataSet.addRow(targetDataSetRow);
-        buildDataSet(dataSet, targetViralLoadConcept);
+       
+        buildDataSet(dataSet, false);
+       
         return dataSet;
-    }
-
-    private void loadConcepts() {
-        artConcept = conceptService.getConceptByUuid(ART_START_DATE);
-        hivViralLoadStatusConcept = conceptService.getConceptByUuid(HIV_VIRAL_LOAD_STATUS);
-        aliveConcept = conceptService.getConceptByUuid(ALIVE);
-        restartConcept = conceptService.getConceptByUuid(RESTART);
-        routineViralLoadConcept = conceptService.getConceptByUuid(HIV_ROUTINE_VIRAL_LOAD_COUNT);
-        targetViralLoadConcept = conceptService.getConceptByUuid(HIV_TARGET_VIRAL_LOAD_COUNT);
-        hivViralLoadSuppressedConcept = conceptService.getConceptByUuid(HIV_VIRAL_LOAD_SUPPRESSED);
-        hivViralLoadUnSuppressedConcept = conceptService.getConceptByUuid(HIV_VIRAL_LOAD_UNSUPPRESSED);
-        followUpStatusConcept = conceptService.getConceptByUuid(FOLLOW_UP_STATUS);
     }
 
     /*
      * Load all patient with viral load count has done in the last 12 month
      */
 
-    private void buildDataSet(SimpleDataSet simpleDataSet, Concept viralLoadTypeConcept) {
-        getAll("F", viralLoadTypeConcept);
+    private void buildDataSet(SimpleDataSet simpleDataSet, boolean isRouteType) {
+
         DataSetRow femaleSetRow = new DataSetRow();
-        buildDataSetColumn(femaleSetRow, "F", viralLoadTypeConcept);
+        buildDataSetColumn(femaleSetRow, "F", isRouteType);
         simpleDataSet.addRow(femaleSetRow);
 
-        getAll("M", viralLoadTypeConcept);
         DataSetRow maleSetRow = new DataSetRow();
-        buildDataSetColumn(maleSetRow, "M", viralLoadTypeConcept);
+        buildDataSetColumn(maleSetRow, "M", isRouteType);
         simpleDataSet.addRow(maleSetRow);
     }
 
-    private void getAll(String gender, Concept viralLoadTypeConcept) {
-        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
+    private Set<Integer> getAllPatientWithViralLoadCount() {
 
-        queryBuilder.select("obs")
-                .from(Obs.class, "obs")
-                .whereEqual("obs.encounter.encounterType", txDatasetDefinition.getEncounterType())
-                .and()
-                .whereEqual("obs.concept", viralLoadTypeConcept)
-                .and()
-                .whereEqual("obs.person.gender", gender)
-                .and()
-                .whereLess("obs.obsDatetime",
-                        txDatasetDefinition.getEndDate())
-                .and()
-                .whereIn("obs.personId", patientIdList)
-                .orderDesc("obs.obsDatetime");
-
-        obses = evaluationService.evaluateToList(queryBuilder, Obs.class, context);
-
+        Cohort cohort = qHivPvlsQuery.getPatientWithViralLoadCount("", txDatasetDefinition.getStartDate(),
+                txDatasetDefinition.getEndDate());
+        return cohort.getMemberIds();
     }
 
-    private List<Integer> getAllPatientWithViralLoudCount() {
-        List<Integer> patientIdList = getListOfALiveORRestartPatientObs();
-        List<Integer> refinedPatientIdList = new ArrayList<>();
-        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
+    private Set<Integer> getAllPatientListWithSuppressedViral() {
+        Cohort suppressedCohort = qHivPvlsQuery.getPatientsWithViralLoadSuppressed("",
+                txDatasetDefinition.getStartDate(), txDatasetDefinition.getEndDate());
+        Cohort ViremiaCohort = qHivPvlsQuery.getPatientWithViralLoadCountLowLevelViremia(" ",
+                txDatasetDefinition.getStartDate(), txDatasetDefinition.getEndDate());
+        Set<Integer> patientIds = new HashSet<>();
+        patientIds.addAll(suppressedCohort.getMemberIds());
+        patientIds.addAll(ViremiaCohort.getMemberIds());
 
-        queryBuilder.select("obs")
-                .from(Obs.class, "obs")
-                .whereEqual("obs.encounter.encounterType", txDatasetDefinition.getEncounterType())
-                .and()
-                .whereEqual("obs.concept", hivViralLoadStatusConcept)
-                .and()
-                .whereIn("obs.valueCoded",
-                        Arrays.asList(hivViralLoadSuppressedConcept, hivViralLoadUnSuppressedConcept))
-                .and()
-                .whereLess("obs.obsDatetime", txDatasetDefinition.getEndDate())
-                .and()
-                .whereIn("obs.personId", patientIdList)
-                .orderDesc("obs.obsDatetime");
-
-        List<Obs> obses = evaluationService.evaluateToList(queryBuilder, Obs.class, context);
-
-        LocalDate endDate = new LocalDate(txDatasetDefinition.getEndDate());
-
-        for (Obs obs : obses) {
-
-            startDate = new LocalDate(obs.getObsDatetime());
-            if (Months.monthsBetween(startDate, endDate)
-                      .getMonths() > _VALID_MONTHS_OF_VIRAL_LOAD_TEST)
-                continue;
-
-            if (!refinedPatientIdList.contains(obs.getPersonId()))
-                refinedPatientIdList.add(obs.getPersonId());
-        }
-        return refinedPatientIdList;
-    }
-    
-    private List<Integer> getSuppressedPatientList() {
-        List<Integer> patientIdList = getListOfALiveORRestartPatientObs();
-        List<Integer> refinedPatientIdList = new ArrayList<>();
-        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-
-        queryBuilder.select("obs")
-                .from(Obs.class, "obs")
-                .whereEqual("obs.encounter.encounterType", txDatasetDefinition.getEncounterType())
-                .and()
-                .whereEqual("obs.concept", hivViralLoadStatusConcept)
-                .and()
-                .whereEqual("obs.valueCoded", hivViralLoadSuppressedConcept)
-                .and()
-                .whereLess("obs.obsDatetime", txDatasetDefinition.getEndDate())
-                .and()
-                .whereIn("obs.personId", patientIdList)
-                .orderDesc("obs.obsDatetime");
-
-        List<Obs> obses = evaluationService.evaluateToList(queryBuilder, Obs.class, context);
-        LocalDate endDate = new LocalDate(txDatasetDefinition.getEndDate());
-        for (Obs obs : obses) {
-            months = Months.monthsBetween(new LocalDate(obs.getObsDatetime()), endDate)
-                    .getMonths();
-            if (months > _VALID_MONTHS_OF_VIRAL_LOAD_TEST)
-                continue;
-            if (!refinedPatientIdList.contains(obs.getPersonId())) {
-                refinedPatientIdList.add(obs.getPersonId());
-            }
-        }
-        return refinedPatientIdList;
+        return patientIds;
     }
 
-    private List<Integer> getListOfALiveORRestartPatientObs() {
-
-        List<Integer> personIdList = new ArrayList<>();
-        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-
-        queryBuilder.select("distinct obs.personId")
-                    .from(Obs.class, "obs")
-                    .whereEqual("obs.encounter.encounterType", txDatasetDefinition.getEncounterType())
-                    .and()
-                    .whereEqual("obs.concept", followUpStatusConcept)
-                    .and()
-                    .whereIn("obs.valueCoded",
-                            Arrays.asList(aliveConcept,
-                                    restartConcept))
-                    .and()
-                    .whereLess("obs.obsDatetime", txDatasetDefinition.getEndDate())
-                    .and()
-                    .whereIdIn("obs.personId", getPatientsOnArt());
-
-        personIdList = evaluationService.evaluateToList(queryBuilder, Integer.class, context);
-
-        return personIdList;
-    }
-   
-    private void buildDataSetColumn(DataSetRow dataSet, String gender, Concept viralLoadTypeConcept) {
+    private void buildDataSetColumn(DataSetRow dataSet, String gender, boolean isRouteType) {
         total = 0;
         minCount = 15;
         maxCount = 19;
-
+        personList.clear();
+        Cohort cohort = qHivPvlsQuery.getPatientVLByTestReason(gender, txDatasetDefinition.getStartDate(),
+                txDatasetDefinition.getEndDate(), isRouteType, new Cohort(patientIdList));
+        personList = qHivPvlsQuery.getPersons(cohort);
         dataSet.addColumnValue(new DataSetColumn("ByAgeAndSexData", "Gender", Integer.class),
                 gender.equals("F") ? "Female"
                         : "Male");
         dataSet.addColumnValue(new DataSetColumn("unknownAge", "Unknown Age", Integer.class),
-                getEnrolledByUnknownAge(viralLoadTypeConcept));
+                getEnrolledByUnknownAge());
 
         while (minCount <= 65) {
             if (minCount == 65) {
                 dataSet.addColumnValue(new DataSetColumn("65+", "65+", Integer.class),
-                        getEnrolledByAgeAndGender(65, 200, gender, viralLoadTypeConcept));
+                        getEnrolledByAgeAndGender(65, 200, gender));
             } else {
                 dataSet.addColumnValue(
                         new DataSetColumn(minCount + "-" + maxCount, minCount + "-" + maxCount, Integer.class),
-                        getEnrolledByAgeAndGender(minCount, maxCount, gender, viralLoadTypeConcept));
+                        getEnrolledByAgeAndGender(minCount, maxCount, gender));
             }
             minCount = maxCount + 1;
             maxCount = minCount + 4;
@@ -255,75 +134,55 @@ public class TX_PVLSDatasetDefinitionEvaluator implements DataSetEvaluator {
         dataSet.addColumnValue(new DataSetColumn("Sub-total", "Subtotal", Integer.class), total);
     }
 
-    private int getEnrolledByAgeAndGender(int min, int max, String gender, Concept viralLoadTypeConcept) {
+    private int getEnrolledByAgeAndGender(int min, int max, String gender) {
         int count = 0;
-        List<Obs> obsList = new ArrayList<>();
-        for (Obs obs : obses) {
 
-            if (countedPatientId.contains(obs.getPersonId()))
+        for (Person person : personList) {
+
+            if (countedPatientId.contains(person.getPersonId()))
                 continue;
 
-            if (obs.getPerson().getAge() >= min && obs.getPerson().getAge() <= max) {
-                obsList.add(obs);
-                countedPatientId.add(obs.getPersonId());
+            if (person.getAge() >= min && person.getAge() <= max) {
+
+                countedPatientId.add(person.getPersonId());
                 count++;
             }
         }
         incrementTotalCount(count);
-        clearCountedObs(obsList);
+        clearCountedObs(countedPatientId);
         return count;
     }
 
-    private int getEnrolledByUnknownAge(Concept viralLoadTypeConcept) {
+    private int getEnrolledByUnknownAge() {
         int count = 0;
-        List<Obs> obsList = new ArrayList<>();
-        for (Obs obs : obses) {
 
-            if (obs.getConcept().equals(viralLoadTypeConcept)) {
-                if (countedPatientId.contains(obs.getPersonId()))
-                    continue;
+        for (Person person : personList) {
 
-                if (Objects.isNull(obs.getPerson().getAge()) ||
-                        obs.getPerson().getAge() <= 0) {
-                    count++;
-                    obsList.add(obs);
-                    countedPatientId.add(obs.getPersonId());
-                }
+            if (countedPatientId.contains(person.getPersonId()))
+                continue;
+
+            if (Objects.isNull(person.getAge()) ||
+                    person.getAge() <= 0) {
+                count++;
+
+                countedPatientId.add(person.getPersonId());
             }
 
         }
         incrementTotalCount(count);
-        clearCountedObs(obsList);
+        clearCountedObs(countedPatientId);
         return count;
     }
-   
+
     private void incrementTotalCount(int count) {
         if (count > 0)
             total = total + count;
     }
 
-    private void clearCountedObs(List<Obs> obsList) {
-        for (Obs obs : obsList) {
-            obses.removeIf(p -> p.getObsId().equals(obs.getId()));
+    private void clearCountedObs(List<Integer> obsList) {
+        for (Integer patientId : countedPatientId) {
+            personList.removeIf(p -> p.getPersonId().equals(patientId));
         }
-    }
-
-    private List<Integer> getPatientsOnArt() {
-        List<Integer> patientIdList = new ArrayList<>();
-
-        HqlQueryBuilder queryBuilder = new HqlQueryBuilder();
-        queryBuilder.select("distinct obs.personId")
-                .from(Obs.class, "obs")
-                .whereEqual("obs.encounter.encounterType", txDatasetDefinition.getEncounterType())
-                .and()
-                .whereEqual("obs.concept", artConcept)
-                .and()
-                .whereLess("obs.valueDatetime", txDatasetDefinition.getEndDate());
-
-        patientIdList = evaluationService.evaluateToList(queryBuilder, Integer.class, context);
-
-        return patientIdList;
-
     }
 
 }

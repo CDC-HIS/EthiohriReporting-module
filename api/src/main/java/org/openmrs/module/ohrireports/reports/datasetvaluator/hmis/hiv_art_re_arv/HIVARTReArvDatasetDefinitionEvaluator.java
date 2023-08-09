@@ -9,6 +9,7 @@ import java.util.List;
 import org.openmrs.Cohort;
 import org.openmrs.Person;
 import org.openmrs.annotation.Handler;
+import org.openmrs.module.ohrireports.api.impl.query.HivArtReArvQuery;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.hiv_art_re_arv.HivArtReArvDatasetDefinition;
 import org.openmrs.module.reporting.dataset.DataSet;
 import org.openmrs.module.reporting.dataset.DataSetColumn;
