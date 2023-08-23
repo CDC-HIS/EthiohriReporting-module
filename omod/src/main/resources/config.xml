@@ -6,7 +6,7 @@
 	<id>${project.parent.artifactId}</id>
 	<name>${project.parent.name}</name>
 	<version>${project.parent.version}</version>
-	<package>org.openmrs.module.ohrireports</package>
+	<package>org.openmrs.module.ethiohrireports</package>
 	<author>sam</author>
 	<description>
 			${project.parent.description}
@@ -62,4 +62,3 @@
 	<!-- /Internationalization -->
 	
 </module>
-

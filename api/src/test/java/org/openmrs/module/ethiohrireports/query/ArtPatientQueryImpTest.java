@@ -1,16 +1,9 @@
 package org.openmrs.module.ethiohrireports.query;
 
 import java.util.Calendar;
-import java.util.List;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.openmrs.Cohort;
-import org.openmrs.Person;
-import org.openmrs.api.context.Context;
-import org.openmrs.module.ohrireports.api.dao.PatientQueryDao;
 import org.openmrs.module.ohrireports.api.impl.PatientQueryImpDao;
-import org.openmrs.module.ohrireports.api.query.PatientQuery;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 
