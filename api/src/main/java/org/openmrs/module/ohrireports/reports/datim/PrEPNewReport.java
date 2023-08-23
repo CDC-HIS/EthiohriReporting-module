@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.openmrs.EncounterType;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.ohrireports.helper.ReportingDateParameter;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.pr_ep_new.AutoCalculatePrepNewDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.pr_ep_new.DisaggregatedByPopulationTypDatasetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.pr_ep_new.PrEPNewDatasetDefinition;
@@ -43,15 +44,7 @@ public class PrEPNewReport implements ReportManager {
 	
 	@Override
 	public List<Parameter> getParameters() {
-		Parameter startDate = new Parameter("startDate", "Start Date", Date.class);
-		startDate.setRequired(true);
-		Parameter startDateGC = new Parameter("startDateGC", " ", Date.class);
-		startDateGC.setRequired(false);
-		Parameter endDate = new Parameter("endDate", "End Date", Date.class);
-		endDate.setRequired(true);
-		Parameter endDateGC = new Parameter("endDateGC", " ", Date.class);
-		endDateGC.setRequired(false);
-		return Arrays.asList(startDate, startDateGC, endDate, endDateGC);
+			return ReportingDateParameter.getEthiopianDateRange();
 	}
 	
 	@Override

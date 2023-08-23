@@ -20,6 +20,7 @@ import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.pr_ep_curr.
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.tx_curr.HmisTXCurrDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.tx_new.HIVTXNewDatasetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.tb_scrn.HmisTbScrnDataSetDefinition;
+import org.openmrs.module.ohrireports.helper.ReportingDateParameter;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.art_tpt.HmisArtTptDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.art_tpt_cr_1.HmisArtTptCrOneDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.hmis.art_tpt_cr_2.HmisArtTptCrTwoDataSetDefinition;
@@ -62,15 +63,7 @@ public class HMISReport implements ReportManager {
 	
 	@Override
 	public List<Parameter> getParameters() {
-		Parameter startDate = new Parameter("startDate", "Start Date", Date.class);
-		startDate.setRequired(true);
-		Parameter startDateGC = new Parameter("startDateGC", " ", Date.class);
-		startDateGC.setRequired(false);
-		Parameter endDate = new Parameter("endDate", "End Date", Date.class);
-		endDate.setRequired(true);
-		Parameter endDateGC = new Parameter("endDateGC", " ", Date.class);
-		endDateGC.setRequired(false);
-		return Arrays.asList(startDate, startDateGC, endDate, endDateGC);
+			return ReportingDateParameter.getEthiopianDateRange();
 	}
 	
 	@Override

@@ -6,6 +6,7 @@ import java.util.List;
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.*;
 
 import org.openmrs.api.context.Context;
+import org.openmrs.module.ohrireports.helper.ReportingDateParameter;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.tb_prev_numerator.TbPrevNumeratorARTByAgeAndSexDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.tb_prev_numerator.TbPrevNumeratorAutoCalculateDataSetDefinition;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
@@ -39,15 +40,7 @@ public class DatimTbPrevNumeratorReport implements ReportManager {
 	
 	@Override
 	public List<Parameter> getParameters() {
-		Parameter startDate = new Parameter("startDate", "Start Date", Date.class);
-		startDate.setRequired(false);
-		Parameter startDateGC = new Parameter("startDateGC", " ", Date.class);
-		startDateGC.setRequired(false);
-		Parameter endDate = new Parameter("endDate", "End Date", Date.class);
-		endDate.setRequired(false);
-		Parameter endDateGC = new Parameter("endDateGC", " ", Date.class);
-		endDateGC.setRequired(false);
-		return Arrays.asList(startDate, startDateGC, endDate, endDateGC);
+			return ReportingDateParameter.getEthiopianDateRange();
 	}
 	
 	@Override

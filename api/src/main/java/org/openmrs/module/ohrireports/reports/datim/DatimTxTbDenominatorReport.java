@@ -3,10 +3,11 @@ package org.openmrs.module.ohrireports.reports.datim;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import static org.openmrs.module.ohrireports.OHRIReportsConstants.HTS_FOLLOW_UP_ENCOUNTER_TYPE;
+
 import static org.openmrs.module.ohrireports.OHRIReportsConstants.*;
 
 import org.openmrs.api.context.Context;
+import org.openmrs.module.ohrireports.helper.ReportingDateParameter;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.tx_tb_denominator.TxTbDenominatorARTByAgeAndSexDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.tx_tb_denominator.TxTbDenominatorAutoCalculateDataSetDefinition;
 import org.openmrs.module.ohrireports.reports.datasetdefinition.datim.tx_tb_denominator.TxTbDenominatorDiagnosticTestDataSetDefinition;
@@ -43,15 +44,7 @@ public class DatimTxTbDenominatorReport implements ReportManager {
 	
 	@Override
 	public List<Parameter> getParameters() {
-		Parameter startDate = new Parameter("startDate", "Start Date", Date.class);
-		startDate.setRequired(false);
-		Parameter startDateGC = new Parameter("startDateGC", " ", Date.class);
-		startDateGC.setRequired(false);
-		Parameter endDate = new Parameter("endDate", "End Date", Date.class);
-		endDate.setRequired(false);
-		Parameter endDateGC = new Parameter("endDateGC", " ", Date.class);
-		endDateGC.setRequired(false);
-		return Arrays.asList(startDate, startDateGC, endDate, endDateGC);
+			return ReportingDateParameter.getEthiopianDateRange();
 	}
 	
 	@Override
